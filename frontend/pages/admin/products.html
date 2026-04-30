@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products — ShopWave Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<div class="admin-layout">
+  <!-- Sidebar (same as dashboard) -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <div class="admin-sidebar__logo">🌊</div>
+      <div>
+        <div class="admin-sidebar__title">ShopWave</div>
+        <div class="admin-sidebar__subtitle">Admin Panel</div>
+      </div>
+    </div>
+    <nav class="admin-sidebar__nav">
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">Main</div>
+        <a class="admin-nav__item" href="/pages/admin/dashboard.html"><span class="icon">📊</span> Dashboard</a>
+        <a class="admin-nav__item" href="/pages/admin/orders.html"><span class="icon">📦</span> Orders</a>
+        <a class="admin-nav__item active" href="/pages/admin/products.html"><span class="icon">🛍️</span> Products</a>
+        <a class="admin-nav__item" href="/pages/admin/customers.html"><span class="icon">👥</span> Customers</a>
+      </div>
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">Catalogue</div>
+        <a class="admin-nav__item" href="/pages/admin/categories.html"><span class="icon">🗂️</span> Categories</a>
+        <a class="admin-nav__item" href="/pages/admin/reviews.html"><span class="icon">⭐</span> Reviews</a>
+        <a class="admin-nav__item" href="/pages/admin/coupons.html"><span class="icon">🏷️</span> Coupons</a>
+      </div>
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">System</div>
+        <a class="admin-nav__item" href="/pages/admin/settings.html"><span class="icon">⚙️</span> Settings</a>
+        <a class="admin-nav__item" href="/" target="_blank"><span class="icon">🌐</span> View Store</a>
+      </div>
+    </nav>
+    <div class="admin-sidebar__footer">
+      <div class="admin-sidebar__user">
+        <div class="admin-sidebar__avatar" id="admin-avatar">A</div>
+        <div class="admin-sidebar__user-info">
+          <div class="admin-sidebar__user-name" id="admin-name">Admin</div>
+          <div class="admin-sidebar__user-role">Administrator</div>
+        </div>
+        <button onclick="Auth.logout()" style="color:rgba(255,255,255,0.4);font-size:18px;" title="Sign out">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <h1 class="admin-topbar__title">Products</h1>
+      <div class="admin-topbar__actions">
+        <button class="btn btn--primary" onclick="openProductModal()">+ New Product</button>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <!-- Filters -->
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-6);flex-wrap:wrap;">
+        <div style="position:relative;flex:1;max-width:320px;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--brand-muted);">🔍</span>
+          <input type="search" id="search-input" class="form-control" placeholder="Search products…"
+            style="padding-left:2.5rem;" oninput="Utils.debounce(loadProducts,400)()">
+        </div>
+        <select class="form-control" id="category-filter" onchange="loadProducts()" style="width:auto;">
+          <option value="">All Categories</option>
+        </select>
+        <select class="form-control" id="status-filter" onchange="loadProducts()" style="width:auto;">
+          <option value="">All Status</option>
+          <option value="in_stock">In Stock</option>
+          <option value="out_of_stock">Out of Stock</option>
+          <option value="discontinued">Discontinued</option>
+        </select>
+        <select class="form-control" id="active-filter" onchange="loadProducts()" style="width:auto;">
+          <option value="">Active & Inactive</option>
+          <option value="true">Active Only</option>
+          <option value="false">Inactive Only</option>
+        </select>
+      </div>
+
+      <!-- Products Table -->
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <div class="admin-table-title">All Products</div>
+          <div class="admin-table-actions">
+            <span id="product-count" style="font-size:var(--text-sm);color:var(--brand-muted);"></span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="products-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Sales</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--brand-muted);">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="products-pagination" style="padding:16px;"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="product-modal" onclick="if(event.target===this)closeProductModal()">
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <span class="modal__title" id="modal-title">Add New Product</span>
+      <button class="modal__close" onclick="closeProductModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="product-form-grid">
+
+        <!-- Left: Main details -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-5);">
+          <div class="form-card">
+            <div class="form-card__header"><div class="form-card__title">Basic Information</div></div>
+            <div class="form-card__body">
+              <div class="form-group">
+                <label class="form-label">Product Name *</label>
+                <input type="text" id="p-name" class="form-control" placeholder="e.g. Wireless Headphones Pro" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Price (₦) *</label>
+                  <input type="number" id="p-price" class="form-control" placeholder="0.00" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Compare Price (₦)</label>
+                  <input type="number" id="p-compare-price" class="form-control" placeholder="0.00" min="0" step="0.01">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Short Description</label>
+                <textarea id="p-short-desc" class="form-control" rows="2" placeholder="Brief product summary (shown in listings)"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Full Description</label>
+                <textarea id="p-description" class="form-control" rows="5" placeholder="Detailed product description…"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">SKU</label>
+                  <input type="text" id="p-sku" class="form-control" placeholder="PROD-001">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tags (comma separated)</label>
+                  <input type="text" id="p-tags" class="form-control" placeholder="electronics, gadgets">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Images -->
+          <div class="form-card">
+            <div class="form-card__header"><div class="form-card__title">Product Images</div></div>
+            <div class="form-card__body">
+              <div class="form-group">
+                <label class="form-label">Image URLs (one per line)</label>
+                <textarea id="p-images" class="form-control" rows="4"
+                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
+                <div class="form-hint">First URL will be the primary image. Supabase Storage paths also supported.</div>
+              </div>
+              <div id="image-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Meta -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-5);">
+          <div class="form-card">
+            <div class="form-card__header"><div class="form-card__title">Organisation</div></div>
+            <div class="form-card__body">
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select id="p-category" class="form-control">
+                  <option value="">No Category</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Product Type</label>
+                <select id="p-type" class="form-control" onchange="toggleDigitalFields()">
+                  <option value="physical">Physical Product</option>
+                  <option value="digital">Digital Product</option>
+                </select>
+              </div>
+              <div id="digital-fields" style="display:none;">
+                <div class="form-group">
+                  <label class="form-label">Digital File URL / Storage Path</label>
+                  <input type="text" id="p-digital-url" class="form-control" placeholder="https://… or storage-path">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Download Limit (blank = unlimited)</label>
+                  <input type="number" id="p-download-limit" class="form-control" placeholder="3" min="1">
+                </div>
+              </div>
+              <div id="physical-fields">
+                <div class="form-group">
+                  <label class="form-label">Stock Quantity</label>
+                  <input type="number" id="p-stock" class="form-control" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Stock Status</label>
+                  <select id="p-stock-status" class="form-control">
+                    <option value="in_stock">In Stock</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                    <option value="backorder">Backorder</option>
+                    <option value="discontinued">Discontinued</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Weight (kg)</label>
+                  <input type="number" id="p-weight" class="form-control" placeholder="0.5" min="0" step="0.01">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card__header"><div class="form-card__title">Visibility</div></div>
+            <div class="form-card__body">
+              <label class="checkbox-label" style="margin-bottom:12px;">
+                <input type="checkbox" id="p-active" checked style="accent-color:var(--brand-primary);">
+                Active (visible to customers)
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="p-featured" style="accent-color:var(--brand-primary);">
+                Featured (shown in homepage)
+              </label>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card__header"><div class="form-card__title">SEO</div></div>
+            <div class="form-card__body">
+              <div class="form-group">
+                <label class="form-label">Meta Title</label>
+                <input type="text" id="p-meta-title" class="form-control" placeholder="SEO page title">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Meta Description</label>
+                <textarea id="p-meta-desc" class="form-control" rows="2" placeholder="SEO description"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeProductModal()">Cancel</button>
+      <button class="btn btn--primary" onclick="saveProduct()">💾 Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <span class="modal__title">Delete Product</span>
+      <button class="modal__close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal__body">
+      <p style="color:var(--brand-mid);">Are you sure you want to deactivate <strong id="delete-product-name"></strong>? It will be hidden from the store.</p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn--outline" style="border-color:var(--color-danger);color:var(--color-danger);" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/core.js"></script>
+<script>
+let currentPage = 1;
+let editingProductId = null;
+let deletingProductId = null;
+let categories = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.requireAdmin()) return;
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('admin-name').textContent = user.full_name || user.email;
+    document.getElementById('admin-avatar').textContent = (user.full_name || user.email)[0].toUpperCase();
+  }
+  loadCategories();
+  loadProducts();
+
+  // Image URL preview
+  document.getElementById('p-images').addEventListener('input', previewImages);
+
+  // Auto-open new product if ?action=new
+  if (Utils.param('action') === 'new') openProductModal();
+});
+
+async function loadCategories() {
+  const { categories: cats } = await API.get('/products/categories').catch(() => ({ categories: [] }));
+  categories = cats;
+  ['p-category', 'category-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isFilter = id === 'category-filter';
+    const options = cats.map(c => `<option value="${isFilter ? c.slug : c.id}">${c.name}</option>`).join('');
+    el.innerHTML = (isFilter ? '<option value="">All Categories</option>' : '<option value="">No Category</option>') + options;
+  });
+}
+
+async function loadProducts() {
+  const tbody = document.getElementById('products-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--brand-muted);">Loading…</td></tr>';
+
+  const params = {
+    search: document.getElementById('search-input').value,
+    category: document.getElementById('category-filter').value,
+    status: document.getElementById('status-filter').value,
+    active: document.getElementById('active-filter').value,
+    page: currentPage, limit: 20,
+  };
+
+  try {
+    const data = await API.get('/admin/products', params);
+    document.getElementById('product-count').textContent = `${(data.total || 0).toLocaleString()} products`;
+    renderProductsTable(data.products || []);
+    renderPagination(data.total, 'products-pagination', p => { currentPage = p; loadProducts(); });
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--color-danger);">${e.message}</td></tr>`;
+  }
+}
+
+function renderProductsTable(products) {
+  const tbody = document.getElementById('products-tbody');
+  if (!products.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--brand-muted);">No products found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = products.map(p => `
+    <tr>
+      <td>
+        <div class="table-product">
+          <img class="table-product__img" src="${p.primary_image || '/assets/placeholder.svg'}" alt=""
+            onerror="this.src='/assets/placeholder.svg'">
+          <div>
+            <div class="table-product__name">${Utils.sanitize(p.name)}</div>
+            <div class="table-product__sku">${p.sku || '—'}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:var(--text-sm);">${Utils.sanitize(p.category_name || '—')}</td>
+      <td>
+        <div style="font-weight:700;">${Utils.formatCurrency(p.price)}</div>
+        ${p.compare_price ? `<div style="font-size:11px;color:var(--brand-muted);text-decoration:line-through;">${Utils.formatCurrency(p.compare_price)}</div>` : ''}
+      </td>
+      <td>
+        <span class="status-chip status-chip--${p.stock_status === 'in_stock' ? 'in-stock' : 'out-stock'}">
+          ${p.stock_status === 'in_stock' ? `✓ ${p.stock_quantity ?? '∞'}` : p.stock_status.replace(/_/g, ' ')}
+        </span>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${p.is_active ? 'var(--color-success)' : 'var(--color-danger)'};"></div>
+          <span style="font-size:var(--text-sm);">${p.is_active ? 'Active' : 'Inactive'}</span>
+        </div>
+      </td>
+      <td style="font-weight:700;">${(p.sale_count || 0).toLocaleString()}</td>
+      <td>
+        <div class="table-actions">
+          <a class="table-action-btn" href="/pages/product.html?slug=${p.slug}" target="_blank" title="View on store">👁</a>
+          <button class="table-action-btn" onclick="editProduct('${p.id}')" title="Edit">✏️</button>
+          <button class="table-action-btn table-action-btn--danger" onclick="deleteProduct('${p.id}','${Utils.sanitize(p.name)}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function renderPagination(total, containerId, onPage) {
+  const totalPages = Math.ceil((total || 0) / 20);
+  const container = document.getElementById(containerId);
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" onclick="onPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="(${onPage.toString()})(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" onclick="(${onPage.toString()})(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>`;
+  container.innerHTML = html;
+}
+
+function openProductModal(product = null) {
+  editingProductId = product?.id || null;
+  document.getElementById('modal-title').textContent = product ? 'Edit Product' : 'Add New Product';
+
+  // Fill form
+  document.getElementById('p-name').value = product?.name || '';
+  document.getElementById('p-price').value = product?.price || '';
+  document.getElementById('p-compare-price').value = product?.compare_price || '';
+  document.getElementById('p-short-desc').value = product?.short_description || '';
+  document.getElementById('p-description').value = product?.description || '';
+  document.getElementById('p-sku').value = product?.sku || '';
+  document.getElementById('p-tags').value = product?.tags?.join(', ') || '';
+  document.getElementById('p-category').value = product?.category_id || '';
+  document.getElementById('p-type').value = product?.product_type || 'physical';
+  document.getElementById('p-stock').value = product?.stock_quantity ?? '';
+  document.getElementById('p-stock-status').value = product?.stock_status || 'in_stock';
+  document.getElementById('p-weight').value = product?.weight || '';
+  document.getElementById('p-active').checked = product?.is_active ?? true;
+  document.getElementById('p-featured').checked = product?.is_featured ?? false;
+  document.getElementById('p-meta-title').value = product?.meta_title || '';
+  document.getElementById('p-meta-desc').value = product?.meta_description || '';
+  document.getElementById('p-digital-url').value = product?.digital_file_url || '';
+  document.getElementById('p-download-limit').value = product?.download_limit || '';
+
+  if (product?.images) {
+    document.getElementById('p-images').value = product.images.map(i => i.image_url).join('\n');
+    previewImages();
+  } else {
+    document.getElementById('p-images').value = '';
+    document.getElementById('image-preview').innerHTML = '';
+  }
+
+  toggleDigitalFields();
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function closeProductModal() {
+  document.getElementById('product-modal').classList.remove('open');
+  editingProductId = null;
+}
+
+function toggleDigitalFields() {
+  const isDigital = document.getElementById('p-type').value === 'digital';
+  document.getElementById('digital-fields').style.display = isDigital ? 'flex' : 'none';
+  document.getElementById('physical-fields').style.display = isDigital ? 'none' : 'block';
+}
+
+function previewImages() {
+  const urls = document.getElementById('p-images').value.split('\n').map(u => u.trim()).filter(Boolean);
+  document.getElementById('image-preview').innerHTML = urls.slice(0, 6).map((url, i) => `
+    <div style="width:64px;height:64px;border-radius:8px;overflow:hidden;border:${i === 0 ? '2px solid var(--brand-primary)' : '1px solid var(--brand-border)'};">
+      <img src="${Utils.sanitize(url)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+    </div>`).join('');
+}
+
+async function editProduct(id) {
+  try {
+    const data = await API.get(`/admin/products/${id}`);
+    openProductModal(data.product);
+  } catch (e) { Toast.error('Error', e.message); }
+}
+
+function deleteProduct(id, name) {
+  deletingProductId = id;
+  document.getElementById('delete-product-name').textContent = name;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  deletingProductId = null;
+}
+
+async function confirmDelete() {
+  if (!deletingProductId) return;
+  try {
+    await API.delete(`/admin/products/${deletingProductId}`);
+    Toast.success('Product deactivated');
+    closeDeleteModal();
+    loadProducts();
+  } catch (e) { Toast.error('Error', e.message); }
+}
+
+async function saveProduct() {
+  const name = document.getElementById('p-name').value.trim();
+  const price = parseFloat(document.getElementById('p-price').value);
+  if (!name || isNaN(price)) { Toast.error('Name and price are required'); return; }
+
+  const imageUrls = document.getElementById('p-images').value.split('\n').map(u => u.trim()).filter(Boolean);
+  const tagsRaw = document.getElementById('p-tags').value;
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+  const payload = {
+    name, price,
+    compare_price: parseFloat(document.getElementById('p-compare-price').value) || null,
+    short_description: document.getElementById('p-short-desc').value.trim() || null,
+    description: document.getElementById('p-description').value.trim() || null,
+    sku: document.getElementById('p-sku').value.trim() || null,
+    tags,
+    category_id: document.getElementById('p-category').value || null,
+    product_type: document.getElementById('p-type').value,
+    stock_quantity: parseInt(document.getElementById('p-stock').value) || 0,
+    stock_status: document.getElementById('p-stock-status').value,
+    weight: parseFloat(document.getElementById('p-weight').value) || null,
+    is_active: document.getElementById('p-active').checked,
+    is_featured: document.getElementById('p-featured').checked,
+    meta_title: document.getElementById('p-meta-title').value.trim() || null,
+    meta_description: document.getElementById('p-meta-desc').value.trim() || null,
+    digital_file_url: document.getElementById('p-digital-url').value.trim() || null,
+    download_limit: parseInt(document.getElementById('p-download-limit').value) || null,
+    images: imageUrls,
+  };
+
+  try {
+    if (editingProductId) {
+      await API.put(`/admin/products/${editingProductId}`, payload);
+      Toast.success('Product updated!');
+    } else {
+      await API.post('/admin/products', payload);
+      Toast.success('Product created!');
+    }
+    closeProductModal();
+    loadProducts();
+  } catch (e) { Toast.error('Save failed', e.message); }
+}
+</script>
+</body>
+</html>

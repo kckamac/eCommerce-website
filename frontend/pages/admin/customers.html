@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers — ShopWave Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <div class="admin-sidebar__logo">🌊</div>
+      <div><div class="admin-sidebar__title">ShopWave</div><div class="admin-sidebar__subtitle">Admin Panel</div></div>
+    </div>
+    <nav class="admin-sidebar__nav">
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">Main</div>
+        <a class="admin-nav__item" href="/pages/admin/dashboard.html"><span class="icon">📊</span> Dashboard</a>
+        <a class="admin-nav__item" href="/pages/admin/orders.html"><span class="icon">📦</span> Orders</a>
+        <a class="admin-nav__item" href="/pages/admin/products.html"><span class="icon">🛍️</span> Products</a>
+        <a class="admin-nav__item active" href="/pages/admin/customers.html"><span class="icon">👥</span> Customers</a>
+      </div>
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">Catalogue</div>
+        <a class="admin-nav__item" href="/pages/admin/categories.html"><span class="icon">🗂️</span> Categories</a>
+        <a class="admin-nav__item" href="/pages/admin/reviews.html"><span class="icon">⭐</span> Reviews</a>
+        <a class="admin-nav__item" href="/pages/admin/coupons.html"><span class="icon">🏷️</span> Coupons</a>
+      </div>
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">System</div>
+        <a class="admin-nav__item" href="/pages/admin/settings.html"><span class="icon">⚙️</span> Settings</a>
+        <a class="admin-nav__item" href="/" target="_blank"><span class="icon">🌐</span> View Store</a>
+      </div>
+    </nav>
+    <div class="admin-sidebar__footer">
+      <div class="admin-sidebar__user">
+        <div class="admin-sidebar__avatar" id="admin-avatar">A</div>
+        <div class="admin-sidebar__user-info">
+          <div class="admin-sidebar__user-name" id="admin-name">Admin</div>
+          <div class="admin-sidebar__user-role">Administrator</div>
+        </div>
+        <button onclick="Auth.logout()" style="color:rgba(255,255,255,0.4);font-size:18px;">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <h1 class="admin-topbar__title">Customers</h1>
+    </header>
+
+    <main class="admin-content">
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-5);">
+        <div style="position:relative;flex:1;max-width:320px;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--brand-muted);">🔍</span>
+          <input type="search" id="search-input" class="form-control" placeholder="Search by name or email…"
+            style="padding-left:2.5rem;" oninput="Utils.debounce(loadCustomers,400)()">
+        </div>
+        <select class="form-control" id="active-filter" onchange="loadCustomers()" style="width:auto;">
+          <option value="">All Customers</option>
+          <option value="true">Active</option>
+          <option value="false">Disabled</option>
+        </select>
+      </div>
+
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <div class="admin-table-title">All Customers</div>
+          <span id="customers-count" style="font-size:var(--text-sm);color:var(--brand-muted);"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Customer</th><th>Phone</th><th>Joined</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customers-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--brand-muted);">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="customers-pagination" style="padding:16px;"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Customer Detail Modal -->
+<div class="modal-overlay" id="customer-modal" onclick="if(event.target===this)closeCustomerModal()">
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <span class="modal__title" id="customer-modal-title">Customer Details</span>
+      <button class="modal__close" onclick="closeCustomerModal()">✕</button>
+    </div>
+    <div class="modal__body" id="customer-modal-body">
+      <div class="skeleton" style="height:200px;border-radius:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/core.js"></script>
+<script>
+let currentPage = 1;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.requireAdmin()) return;
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('admin-name').textContent = user.full_name || user.email;
+    document.getElementById('admin-avatar').textContent = (user.full_name || user.email)[0].toUpperCase();
+  }
+  loadCustomers();
+});
+
+async function loadCustomers() {
+  const tbody = document.getElementById('customers-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--brand-muted);">Loading…</td></tr>';
+
+  try {
+    const data = await API.get('/admin/customers', {
+      search: document.getElementById('search-input').value,
+      active: document.getElementById('active-filter').value,
+      page: currentPage, limit: 20,
+    });
+
+    document.getElementById('customers-count').textContent = `${(data.total || 0).toLocaleString()} customers`;
+
+    if (!data.customers?.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--brand-muted);">No customers found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.customers.map(c => `
+      <tr style="cursor:pointer;" onclick="viewCustomer('${c.id}')">
+        <td>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--brand-primary-bg);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brand-primary);flex-shrink:0;">
+              ${(c.full_name || c.email)[0].toUpperCase()}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:var(--text-sm);">${Utils.sanitize(c.full_name || 'No Name')}</div>
+              <div style="font-size:var(--text-xs);color:var(--brand-muted);">${Utils.sanitize(c.email)}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:var(--text-sm);">${Utils.sanitize(c.phone || '—')}</td>
+        <td style="font-size:var(--text-sm);color:var(--brand-muted);">${Utils.formatDate(c.created_at)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${c.is_active ? 'var(--color-success)' : 'var(--color-danger)'};"></div>
+            <span style="font-size:var(--text-sm);">${c.is_active ? 'Active' : 'Disabled'}</span>
+          </div>
+        </td>
+        <td onclick="event.stopPropagation()">
+          <div class="table-actions">
+            <button class="table-action-btn" onclick="viewCustomer('${c.id}')" title="View">👁</button>
+            <button class="table-action-btn ${c.is_active ? 'table-action-btn--danger' : ''}"
+              onclick="toggleCustomer('${c.id}', ${c.is_active})"
+              title="${c.is_active ? 'Disable' : 'Enable'}">
+              ${c.is_active ? '🚫' : '✅'}
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    // Pagination
+    const totalPages = Math.ceil((data.total || 0) / 20);
+    const pag = document.getElementById('customers-pagination');
+    if (totalPages <= 1) { pag.innerHTML = ''; return; }
+    pag.innerHTML = `
+      <button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>
+      ${Array.from({ length: Math.min(totalPages, 8) }, (_, i) => i + 1).map(i =>
+        `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`
+      ).join('')}
+      <button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>`;
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--color-danger);">${e.message}</td></tr>`;
+  }
+}
+
+function goPage(p) { currentPage = p; loadCustomers(); }
+
+async function viewCustomer(id) {
+  document.getElementById('customer-modal').classList.add('open');
+  document.getElementById('customer-modal-body').innerHTML = '<div class="skeleton" style="height:300px;border-radius:12px;"></div>';
+
+  try {
+    const data = await API.get(`/admin/customers/${id}`);
+    const { customer: c, orders, totalOrders, totalSpend } = data;
+
+    document.getElementById('customer-modal-title').textContent = c.full_name || c.email;
+    document.getElementById('customer-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-6);">
+        <div style="background:var(--brand-primary-bg);border-radius:var(--radius-lg);padding:var(--space-4);text-align:center;">
+          <div style="font-size:var(--text-2xl);font-weight:700;color:var(--brand-primary);">${totalOrders || 0}</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-mid);">Total Orders</div>
+        </div>
+        <div style="background:var(--brand-secondary-bg);border-radius:var(--radius-lg);padding:var(--space-4);text-align:center;">
+          <div style="font-size:var(--text-2xl);font-weight:700;color:var(--brand-secondary);">${Utils.formatCurrency(totalSpend || 0)}</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-mid);">Total Spend</div>
+        </div>
+        <div style="background:#FFF8E1;border-radius:var(--radius-lg);padding:var(--space-4);text-align:center;">
+          <div style="font-size:var(--text-2xl);font-weight:700;color:var(--brand-gold);">${Utils.formatDate(c.created_at)}</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-mid);">Member Since</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:var(--space-6);">
+        <div style="font-weight:700;margin-bottom:var(--space-3);">Contact</div>
+        <div style="font-size:var(--text-sm);color:var(--brand-mid);line-height:2;">
+          📧 ${Utils.sanitize(c.email)}<br>
+          📞 ${Utils.sanitize(c.phone || 'Not provided')}<br>
+          🆔 ${Utils.sanitize(c.id)}
+        </div>
+      </div>
+
+      ${orders?.length ? `
+      <div>
+        <div style="font-weight:700;margin-bottom:var(--space-3);">Recent Orders</div>
+        ${orders.map(o => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;border-bottom:1px solid var(--brand-border-light);">
+            <div>
+              <span style="font-family:var(--font-mono);font-weight:700;color:var(--brand-primary);">#${o.order_number}</span>
+              <span style="font-size:var(--text-xs);color:var(--brand-muted);margin-left:8px;">${Utils.timeAgo(o.created_at)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-3);">
+              <span class="status-chip status-chip--${o.status}">${o.status}</span>
+              <span style="font-weight:700;">${Utils.formatCurrency(o.total)}</span>
+            </div>
+          </div>`).join('')}
+      </div>` : '<p style="color:var(--brand-muted);">No orders yet.</p>'}
+
+      <div style="margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--brand-border);">
+        <button class="btn btn--outline btn--sm ${c.is_active ? '' : 'btn--primary'}"
+          onclick="toggleCustomer('${c.id}', ${c.is_active}); closeCustomerModal();">
+          ${c.is_active ? '🚫 Disable Account' : '✅ Enable Account'}
+        </button>
+      </div>`;
+  } catch (e) {
+    document.getElementById('customer-modal-body').innerHTML = `<p style="color:var(--color-danger);">${e.message}</p>`;
+  }
+}
+
+async function toggleCustomer(id, isCurrentlyActive) {
+  try {
+    await API.patch(`/admin/customers/${id}`, { is_active: !isCurrentlyActive });
+    Toast.success(isCurrentlyActive ? 'Customer disabled' : 'Customer enabled');
+    loadCustomers();
+  } catch (e) { Toast.error('Error', e.message); }
+}
+
+function closeCustomerModal() {
+  document.getElementById('customer-modal').classList.remove('open');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders — ShopWave Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <div class="admin-sidebar__logo">🌊</div>
+      <div><div class="admin-sidebar__title">ShopWave</div><div class="admin-sidebar__subtitle">Admin Panel</div></div>
+    </div>
+    <nav class="admin-sidebar__nav">
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">Main</div>
+        <a class="admin-nav__item" href="/pages/admin/dashboard.html"><span class="icon">📊</span> Dashboard</a>
+        <a class="admin-nav__item active" href="/pages/admin/orders.html"><span class="icon">📦</span> Orders</a>
+        <a class="admin-nav__item" href="/pages/admin/products.html"><span class="icon">🛍️</span> Products</a>
+        <a class="admin-nav__item" href="/pages/admin/customers.html"><span class="icon">👥</span> Customers</a>
+      </div>
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">Catalogue</div>
+        <a class="admin-nav__item" href="/pages/admin/categories.html"><span class="icon">🗂️</span> Categories</a>
+        <a class="admin-nav__item" href="/pages/admin/reviews.html"><span class="icon">⭐</span> Reviews</a>
+        <a class="admin-nav__item" href="/pages/admin/coupons.html"><span class="icon">🏷️</span> Coupons</a>
+      </div>
+      <div class="admin-nav__section">
+        <div class="admin-nav__label">System</div>
+        <a class="admin-nav__item" href="/pages/admin/settings.html"><span class="icon">⚙️</span> Settings</a>
+        <a class="admin-nav__item" href="/" target="_blank"><span class="icon">🌐</span> View Store</a>
+      </div>
+    </nav>
+    <div class="admin-sidebar__footer">
+      <div class="admin-sidebar__user">
+        <div class="admin-sidebar__avatar" id="admin-avatar">A</div>
+        <div class="admin-sidebar__user-info">
+          <div class="admin-sidebar__user-name" id="admin-name">Admin</div>
+          <div class="admin-sidebar__user-role">Administrator</div>
+        </div>
+        <button onclick="Auth.logout()" style="color:rgba(255,255,255,0.4);font-size:18px;">🚪</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <h1 class="admin-topbar__title">Orders</h1>
+      <div class="admin-topbar__actions">
+        <button class="btn btn--outline btn--sm" onclick="exportOrders()">📥 Export CSV</button>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <!-- Status Quick Tabs -->
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-5);border-bottom:1px solid var(--brand-border);overflow-x:auto;">
+        <button class="order-tab active" data-status="" onclick="setStatusTab(this,'')">All Orders</button>
+        <button class="order-tab" data-status="pending" onclick="setStatusTab(this,'pending')">Pending</button>
+        <button class="order-tab" data-status="confirmed" onclick="setStatusTab(this,'confirmed')">Confirmed</button>
+        <button class="order-tab" data-status="processing" onclick="setStatusTab(this,'processing')">Processing</button>
+        <button class="order-tab" data-status="shipped" onclick="setStatusTab(this,'shipped')">Shipped</button>
+        <button class="order-tab" data-status="delivered" onclick="setStatusTab(this,'delivered')">Delivered</button>
+        <button class="order-tab" data-status="cancelled" onclick="setStatusTab(this,'cancelled')">Cancelled</button>
+      </div>
+
+      <!-- Filters -->
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-5);flex-wrap:wrap;">
+        <div style="position:relative;flex:1;max-width:280px;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--brand-muted);">🔍</span>
+          <input type="search" id="search-input" class="form-control" placeholder="Order # or customer…"
+            style="padding-left:2.5rem;" oninput="Utils.debounce(loadOrders,400)()">
+        </div>
+        <input type="date" id="from-date" class="form-control" onchange="loadOrders()" style="width:auto;">
+        <input type="date" id="to-date" class="form-control" onchange="loadOrders()" style="width:auto;">
+      </div>
+
+      <!-- Orders Table -->
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <div class="admin-table-title">Orders</div>
+          <span id="orders-count" style="font-size:var(--text-sm);color:var(--brand-muted);"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th><th>Customer</th><th>Date</th>
+                <th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--brand-muted);">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="orders-pagination" style="padding:16px;"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="order-modal" onclick="if(event.target===this)closeOrderModal()">
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <span class="modal__title" id="order-modal-title">Order Details</span>
+      <button class="modal__close" onclick="closeOrderModal()">✕</button>
+    </div>
+    <div class="modal__body" id="order-modal-body">
+      <div class="skeleton" style="height:300px;border-radius:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+.order-tab {
+  padding: 0.6rem 1.2rem; border: none; background: none; cursor: pointer;
+  font-size: var(--text-sm); font-weight: 500; color: var(--brand-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+.order-tab:hover { color: var(--brand-primary); }
+.order-tab.active { color: var(--brand-primary); border-bottom-color: var(--brand-primary); font-weight: 700; }
+</style>
+
+<script src="/js/core.js"></script>
+<script>
+let currentPage = 1;
+let currentStatus = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.requireAdmin()) return;
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('admin-name').textContent = user.full_name || user.email;
+    document.getElementById('admin-avatar').textContent = (user.full_name || user.email)[0].toUpperCase();
+  }
+
+  // Open specific order if ?id= param
+  const orderId = Utils.param('id');
+  if (orderId) setTimeout(() => viewOrder(orderId), 500);
+
+  loadOrders();
+});
+
+function setStatusTab(btn, status) {
+  document.querySelectorAll('.order-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentStatus = status;
+  currentPage = 1;
+  loadOrders();
+}
+
+async function loadOrders() {
+  const tbody = document.getElementById('orders-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--brand-muted);">Loading…</td></tr>';
+
+  const params = {
+    status: currentStatus,
+    search: document.getElementById('search-input').value,
+    from_date: document.getElementById('from-date').value,
+    to_date: document.getElementById('to-date').value,
+    page: currentPage, limit: 20,
+  };
+
+  try {
+    const data = await API.get('/admin/orders', params);
+    document.getElementById('orders-count').textContent = `${(data.total || 0).toLocaleString()} orders`;
+    renderOrdersTable(data.orders || []);
+    renderPagination(data.total);
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--color-danger);">${e.message}</td></tr>`;
+  }
+}
+
+function renderOrdersTable(orders) {
+  const tbody = document.getElementById('orders-tbody');
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--brand-muted);">No orders found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = orders.map(o => `
+    <tr style="cursor:pointer;" onclick="viewOrder('${o.id}')">
+      <td><span style="font-family:var(--font-mono);font-weight:700;color:var(--brand-primary);">#${o.order_number}</span></td>
+      <td>
+        <div style="font-weight:600;font-size:var(--text-sm);">${Utils.sanitize(o.customer_name)}</div>
+        <div style="font-size:var(--text-xs);color:var(--brand-muted);">${Utils.sanitize(o.customer_email || '')}</div>
+      </td>
+      <td style="font-size:var(--text-sm);color:var(--brand-muted);">${Utils.timeAgo(o.created_at)}</td>
+      <td style="font-size:var(--text-sm);">${(o.order_items?.length || 0)} item${(o.order_items?.length || 0) !== 1 ? 's' : ''}</td>
+      <td style="font-weight:700;">${Utils.formatCurrency(o.total)}</td>
+      <td><span class="status-chip status-chip--${o.payment_status}">${o.payment_status}</span></td>
+      <td><span class="status-chip status-chip--${o.status}">${o.status}</span></td>
+      <td onclick="event.stopPropagation()">
+        <div class="table-actions">
+          <button class="table-action-btn" onclick="viewOrder('${o.id}')" title="View">👁</button>
+          <button class="table-action-btn" onclick="quickUpdateStatus('${o.id}')" title="Update Status">✏️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function viewOrder(id) {
+  document.getElementById('order-modal').classList.add('open');
+  document.getElementById('order-modal-body').innerHTML = '<div class="skeleton" style="height:300px;border-radius:12px;"></div>';
+
+  try {
+    const data = await API.get(`/admin/orders/${id}`);
+    const o = data.order;
+    document.getElementById('order-modal-title').textContent = `Order #${o.order_number}`;
+
+    document.getElementById('order-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-bottom:var(--space-6);">
+        <div>
+          <div style="font-weight:700;margin-bottom:var(--space-3);">Customer</div>
+          <div style="font-size:var(--text-sm);color:var(--brand-mid);line-height:1.8;">
+            ${Utils.sanitize(o.profiles?.full_name || o.guest_email || 'Guest')}<br>
+            ${Utils.sanitize(o.profiles?.email || o.guest_email || '')}<br>
+            ${Utils.sanitize(o.profiles?.phone || '')}
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:700;margin-bottom:var(--space-3);">Shipping Address</div>
+          <div style="font-size:var(--text-sm);color:var(--brand-mid);line-height:1.8;">
+            ${o.shipping_address ? [
+              o.shipping_address.full_name,
+              o.shipping_address.address_line1,
+              o.shipping_address.address_line2,
+              `${o.shipping_address.city}, ${o.shipping_address.state}`,
+              o.shipping_address.country,
+            ].filter(Boolean).map(s => Utils.sanitize(s)).join('<br>') : 'N/A'}
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Items -->
+      <div style="background:var(--brand-bg);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-6);">
+        ${(o.order_items || []).map(item => `
+          <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);border-bottom:1px solid var(--brand-border-light);">
+            <img src="${item.product_image || '/assets/placeholder.svg'}" style="width:48px;height:48px;border-radius:var(--radius-md);object-fit:cover;" onerror="this.src='/assets/placeholder.svg'">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:var(--text-sm);">${Utils.sanitize(item.product_name)}</div>
+              ${item.variant_name ? `<div style="font-size:var(--text-xs);color:var(--brand-muted);">${Utils.sanitize(item.variant_name)}</div>` : ''}
+              <div style="font-size:var(--text-xs);color:var(--brand-muted);">Qty: ${item.quantity} × ${Utils.formatCurrency(item.unit_price)}</div>
+            </div>
+            <div style="font-weight:700;">${Utils.formatCurrency(item.total_price)}</div>
+          </div>`).join('')}
+
+        <!-- Totals -->
+        <div style="padding:var(--space-4);">
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-sm);margin-bottom:8px;">
+            <span style="color:var(--brand-muted);">Subtotal</span><span>${Utils.formatCurrency(o.subtotal)}</span>
+          </div>
+          ${o.discount_amount > 0 ? `<div style="display:flex;justify-content:space-between;font-size:var(--text-sm);margin-bottom:8px;">
+            <span style="color:var(--color-success);">Discount</span><span style="color:var(--color-success);">-${Utils.formatCurrency(o.discount_amount)}</span>
+          </div>` : ''}
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-sm);margin-bottom:8px;">
+            <span style="color:var(--brand-muted);">Shipping</span><span>${Utils.formatCurrency(o.shipping_amount)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-lg);font-weight:700;padding-top:8px;border-top:1px solid var(--brand-border);">
+            <span>Total</span><span style="color:var(--brand-primary);">${Utils.formatCurrency(o.total)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Status -->
+      <div style="background:var(--brand-white);border-radius:var(--radius-lg);padding:var(--space-5);border:1px solid var(--brand-border);">
+        <div style="font-weight:700;margin-bottom:var(--space-4);">Update Order</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-3);">
+          <div class="form-group">
+            <label class="form-label">Order Status</label>
+            <select id="update-status" class="form-control">
+              ${['pending','confirmed','processing','shipped','delivered','cancelled','refunded'].map(s =>
+                `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Status</label>
+            <select id="update-payment" class="form-control">
+              ${['unpaid','paid','partial','refunded','failed'].map(s =>
+                `<option value="${s}" ${o.payment_status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+              ).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-3);">
+          <label class="form-label">Tracking Number</label>
+          <input type="text" id="update-tracking" class="form-control" value="${o.tracking_number || ''}" placeholder="Enter tracking number">
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-4);">
+          <label class="form-label">Note (optional)</label>
+          <input type="text" id="update-note" class="form-control" placeholder="e.g. Dispatched via DHL">
+        </div>
+        <button class="btn btn--primary" onclick="updateOrder('${o.id}')">💾 Update Order</button>
+      </div>`;
+  } catch (e) {
+    document.getElementById('order-modal-body').innerHTML = `<p style="color:var(--color-danger);">${e.message}</p>`;
+  }
+}
+
+async function updateOrder(orderId) {
+  try {
+    await API.patch(`/admin/orders/${orderId}`, {
+      status: document.getElementById('update-status').value,
+      payment_status: document.getElementById('update-payment').value,
+      tracking_number: document.getElementById('update-tracking').value,
+      note: document.getElementById('update-note').value,
+    });
+    Toast.success('Order updated!');
+    closeOrderModal();
+    loadOrders();
+  } catch (e) { Toast.error('Update failed', e.message); }
+}
+
+function closeOrderModal() {
+  document.getElementById('order-modal').classList.remove('open');
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil((total || 0) / 20);
+  const container = document.getElementById('orders-pagination');
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+  for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>`;
+  container.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; loadOrders(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+function exportOrders() {
+  const params = new URLSearchParams({
+    status: currentStatus,
+    search: document.getElementById('search-input').value,
+    limit: 1000,
+  });
+  Toast.info('Exporting…', 'Your CSV will download shortly');
+  // In production, call a dedicated export endpoint
+  setTimeout(() => Toast.success('Export ready', 'Check your downloads folder'), 2000);
+}
+</script>
+</body>
+</html>

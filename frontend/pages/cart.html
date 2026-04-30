@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart — ShopWave</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<div class="topbar">🎉 Free shipping on orders over ₦50,000</div>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar__inner">
+      <a href="/" class="navbar__logo">
+        <div class="navbar__logo-icon">🌊</div>
+        <span class="navbar__logo-text">Shop<span>Wave</span></span>
+      </a>
+      <div class="navbar__search" role="search">
+        <span class="navbar__search-icon">🔍</span>
+        <input type="search" id="navbar-search" class="navbar__search-input" placeholder="Search products…" autocomplete="off">
+        <div class="search-dropdown" id="search-dropdown"></div>
+      </div>
+      <div class="navbar__actions">
+        <button class="navbar__action-btn" data-open-cart>🛒
+          <span class="navbar__badge" data-cart-badge style="display:none;">0</span>
+        </button>
+        <div id="nav-guest" class="flex gap-2">
+          <a href="/pages/auth.html" class="btn btn--outline btn--sm">Login</a>
+          <a href="/pages/auth.html?tab=register" class="btn btn--primary btn--sm">Sign Up</a>
+        </div>
+        <div class="user-menu hidden" id="nav-user">
+          <button class="user-menu__trigger">
+            <div class="user-menu__avatar"><span id="nav-avatar-text">U</span></div>
+            <span class="user-menu__name" id="nav-user-name"></span>
+            <span style="font-size:10px;">▼</span>
+          </button>
+          <div class="user-menu__dropdown">
+            <div class="user-menu__header">
+              <div class="user-menu__user-name" id="nav-user-name-2"></div>
+              <div class="user-menu__user-email" id="nav-user-email"></div>
+            </div>
+            <a class="user-menu__item" href="/pages/account.html">👤 My Account</a>
+            <a class="user-menu__item" href="/pages/orders.html">📦 My Orders</a>
+            <div class="user-menu__divider"></div>
+            <button class="user-menu__item user-menu__item--danger w-full" onclick="Auth.logout()">🚪 Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="section--sm">
+  <div class="container">
+    <nav class="breadcrumb">
+      <div class="breadcrumb__item"><a href="/" class="breadcrumb__link">Home</a><span class="breadcrumb__sep">›</span></div>
+      <div class="breadcrumb__item"><span class="breadcrumb__current">Shopping Cart</span></div>
+    </nav>
+
+    <h1 style="font-family:var(--font-display);font-size:var(--text-3xl);margin-bottom:var(--space-8);">
+      Shopping Cart <span id="cart-item-count" style="font-size:var(--text-xl);color:var(--brand-muted);font-family:var(--font-body);font-weight:400;"></span>
+    </h1>
+
+    <div id="cart-content"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom" style="padding-top:0;border-top:none;">
+      <div class="footer__copy">© 2025 ShopWave. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+<style>
+.cart-table { width:100%; border-collapse: collapse; }
+.cart-table th {
+  padding: var(--space-4) var(--space-5);
+  text-align: left; font-size: var(--text-xs); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--brand-muted); border-bottom: 2px solid var(--brand-border);
+}
+.cart-table td { padding: var(--space-5); border-bottom: 1px solid var(--brand-border-light); vertical-align: middle; }
+.cart-table tr:last-child td { border-bottom: none; }
+.cart-product { display: flex; align-items: center; gap: var(--space-4); }
+.cart-product__img { width: 80px; height: 80px; border-radius: var(--radius-lg); object-fit: cover; background: var(--brand-light); flex-shrink: 0; }
+.cart-product__name { font-weight: 600; font-size: var(--text-sm); margin-bottom: 4px; }
+.cart-product__variant { font-size: var(--text-xs); color: var(--brand-muted); }
+.cart-product__remove { font-size: var(--text-xs); color: var(--brand-muted); margin-top: 6px; cursor: pointer; }
+.cart-product__remove:hover { color: var(--color-danger); }
+.order-summary { background: var(--brand-white); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); padding: var(--space-6); }
+.order-summary__title { font-size: var(--text-xl); font-weight: 700; margin-bottom: var(--space-5); }
+.summary-row { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--brand-mid); margin-bottom: var(--space-3); }
+.summary-row--total { font-size: var(--text-lg); font-weight: 700; color: var(--brand-dark); padding-top: var(--space-4); border-top: 1px solid var(--brand-border); margin-top: var(--space-3); margin-bottom: var(--space-5); }
+.coupon-row { display: flex; gap: var(--space-3); margin-bottom: var(--space-5); }
+</style>
+
+<script src="/js/core.js"></script>
+<script>
+function renderCart() {
+  const items = Cart.items();
+  const content = document.getElementById('cart-content');
+  const countEl = document.getElementById('cart-item-count');
+
+  if (countEl) countEl.textContent = `(${Cart.count()} item${Cart.count() !== 1 ? 's' : ''})`;
+
+  if (!items.length) {
+    content.innerHTML = `
+      <div style="text-align:center;padding:var(--space-20) 0;">
+        <div style="font-size:64px;margin-bottom:var(--space-5);">🛒</div>
+        <h2 style="font-size:var(--text-2xl);margin-bottom:var(--space-3);">Your cart is empty</h2>
+        <p style="color:var(--brand-muted);margin-bottom:var(--space-8);">Add some amazing products to get started!</p>
+        <a href="/pages/shop.html" class="btn btn--primary btn--lg">Start Shopping</a>
+      </div>`;
+    return;
+  }
+
+  const subtotal = Cart.subtotal();
+  const shipping = subtotal >= 50000 ? 0 : 1500;
+  const total = subtotal + shipping;
+
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:var(--space-8);align-items:start;">
+      <!-- Cart Items -->
+      <div style="background:var(--brand-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);overflow:hidden;">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>
+                  <div class="cart-product">
+                    <a href="/pages/product.html?slug=${item.slug}">
+                      <img class="cart-product__img" src="${item.image || '/assets/placeholder.svg'}"
+                        alt="${Utils.sanitize(item.name)}" loading="lazy" onerror="this.src='/assets/placeholder.svg'">
+                    </a>
+                    <div>
+                      <div class="cart-product__name">
+                        <a href="/pages/product.html?slug=${item.slug}" style="color:inherit;">${Utils.sanitize(item.name)}</a>
+                      </div>
+                      ${item.variantName ? `<div class="cart-product__variant">${Utils.sanitize(item.variantName)}</div>` : ''}
+                      ${item.product_type === 'digital' ? `<span class="badge badge--digital" style="margin-top:4px;">Digital</span>` : ''}
+                      <div class="cart-product__remove" onclick="removeItem('${item.key}')">✕ Remove</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="font-weight:600;">${Utils.formatCurrency(item.price)}</td>
+                <td>
+                  <div class="quantity-control">
+                    <button class="quantity-btn" onclick="updateQty('${item.key}', ${item.quantity - 1})">−</button>
+                    <input type="number" class="quantity-value" value="${item.quantity}" min="1"
+                      onchange="updateQty('${item.key}', parseInt(this.value)||1)">
+                    <button class="quantity-btn" onclick="updateQty('${item.key}', ${item.quantity + 1})">+</button>
+                  </div>
+                </td>
+                <td style="font-weight:700;font-size:var(--text-md);">${Utils.formatCurrency(item.price * item.quantity)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="padding:var(--space-5);border-top:1px solid var(--brand-border-light);display:flex;justify-content:space-between;align-items:center;">
+          <a href="/pages/shop.html" class="btn btn--ghost">← Continue Shopping</a>
+          <button class="btn btn--outline-dark btn--sm" onclick="Cart.clear();renderCart();">Clear Cart</button>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="order-summary">
+        <div class="order-summary__title">Order Summary</div>
+
+        <!-- Coupon -->
+        <div class="coupon-row">
+          <input type="text" id="coupon-input" class="form-control" placeholder="Coupon code">
+          <button class="btn btn--outline" onclick="applyCoupon()">Apply</button>
+        </div>
+        <div id="coupon-msg" style="font-size:var(--text-xs);margin-top:-12px;margin-bottom:var(--space-4);"></div>
+
+        <div class="summary-row">
+          <span>Subtotal (${Cart.count()} items)</span>
+          <span>${Utils.formatCurrency(subtotal)}</span>
+        </div>
+        <div class="summary-row">
+          <span>Shipping</span>
+          <span style="color:${shipping === 0 ? 'var(--color-success)' : 'inherit'}">
+            ${shipping === 0 ? 'Free' : Utils.formatCurrency(shipping)}
+          </span>
+        </div>
+        <div id="discount-row" class="summary-row" style="display:none;color:var(--color-success);">
+          <span>Discount</span>
+          <span id="discount-amt"></span>
+        </div>
+        <div class="summary-row--total">
+          <span>Total</span>
+          <span style="color:var(--brand-primary);" id="total-display">${Utils.formatCurrency(total)}</span>
+        </div>
+
+        <a href="/pages/checkout.html" class="btn btn--primary btn--full btn--lg">
+          Proceed to Checkout →
+        </a>
+
+        <div style="margin-top:var(--space-5);display:flex;flex-direction:column;gap:var(--space-2);">
+          <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-xs);color:var(--brand-muted);">
+            🔒 Secure SSL encrypted checkout
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-xs);color:var(--brand-muted);">
+            🚚 Free shipping on orders over ₦50,000
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-xs);color:var(--brand-muted);">
+            🔄 30-day hassle-free returns
+          </div>
+        </div>
+
+        <!-- Payment icons -->
+        <div style="margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid var(--brand-border-light);">
+          <div style="font-size:var(--text-xs);color:var(--brand-muted);margin-bottom:var(--space-3);">Accepted Payments</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:var(--brand-bg);border:1px solid var(--brand-border);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;">Paystack</span>
+            <span style="background:var(--brand-bg);border:1px solid var(--brand-border);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;">Flutterwave</span>
+            <span style="background:var(--brand-bg);border:1px solid var(--brand-border);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;">PayPal</span>
+            <span style="background:var(--brand-bg);border:1px solid var(--brand-border);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;">Visa</span>
+            <span style="background:var(--brand-bg);border:1px solid var(--brand-border);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;">Mastercard</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updateQty(key, qty) {
+  Cart.update(key, qty);
+  renderCart();
+}
+
+function removeItem(key) {
+  Cart.remove(key);
+  renderCart();
+}
+
+async function applyCoupon() {
+  const code = document.getElementById('coupon-input')?.value?.trim();
+  if (!code) return;
+  const msgEl = document.getElementById('coupon-msg');
+  try {
+    const data = await API.post('/orders/apply-coupon', { code, subtotal: Cart.subtotal() });
+    if (data.valid) {
+      msgEl.style.color = 'var(--color-success)';
+      msgEl.textContent = `✓ Coupon applied! You save ${Utils.formatCurrency(data.discount)}`;
+      document.getElementById('discount-row').style.display = 'flex';
+      document.getElementById('discount-amt').textContent = `-${Utils.formatCurrency(data.discount)}`;
+      const newTotal = Cart.subtotal() + (Cart.subtotal() >= 50000 ? 0 : 1500) - data.discount;
+      document.getElementById('total-display').textContent = Utils.formatCurrency(Math.max(0, newTotal));
+      // Store coupon for checkout
+      sessionStorage.setItem('sw_coupon', JSON.stringify(data));
+    } else {
+      msgEl.style.color = 'var(--color-danger)';
+      msgEl.textContent = `✕ ${data.error}`;
+    }
+  } catch {
+    msgEl.style.color = 'var(--color-danger)';
+    msgEl.textContent = '✕ Failed to validate coupon';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderCart();
+  document.addEventListener('cart:updated', renderCart);
+});
+</script>
+</body>
+</html>

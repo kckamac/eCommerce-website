@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ShopWave — Discover thousands of products with fast delivery across Nigeria. Shop electronics, fashion, beauty, and more.">
+  <meta name="theme-color" content="#FF6B35">
+  <title>ShopWave — Shop Everything, Everywhere</title>
+
+  <!-- Preconnect fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="ShopWave — Shop Everything, Everywhere">
+  <meta property="og:description" content="Discover thousands of products with fast delivery.">
+  <meta property="og:type" content="website">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+  🎉 Free shipping on orders over ₦50,000 — <a href="/pages/shop.html">Shop Now</a>
+</div>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="container">
+    <div class="navbar__inner">
+      <!-- Logo -->
+      <a href="/" class="navbar__logo" aria-label="ShopWave Home">
+        <div class="navbar__logo-icon">🌊</div>
+        <span class="navbar__logo-text">Shop<span>Wave</span></span>
+      </a>
+
+      <!-- Search -->
+      <div class="navbar__search" role="search">
+        <span class="navbar__search-icon" aria-hidden="true">🔍</span>
+        <input type="search" id="navbar-search" class="navbar__search-input"
+          placeholder="Search products, brands, categories…"
+          autocomplete="off" aria-label="Search products">
+        <div class="search-dropdown" id="search-dropdown" role="listbox"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="navbar__actions">
+        <!-- Wishlist -->
+        <a href="/pages/account.html#wishlist" class="navbar__action-btn" aria-label="Wishlist">
+          🤍
+        </a>
+
+        <!-- Cart -->
+        <button class="navbar__action-btn" data-open-cart aria-label="Shopping cart">
+          🛒
+          <span class="navbar__badge" data-cart-badge style="display:none;">0</span>
+        </button>
+
+        <!-- Guest: Login / Register -->
+        <div id="nav-guest" class="flex gap-2">
+          <a href="/pages/auth.html" class="btn btn--outline btn--sm">Login</a>
+          <a href="/pages/auth.html?tab=register" class="btn btn--primary btn--sm">Sign Up</a>
+        </div>
+
+        <!-- Logged in: User menu -->
+        <div class="user-menu hidden" id="nav-user">
+          <button class="user-menu__trigger" aria-haspopup="true">
+            <div class="user-menu__avatar">
+              <span id="nav-avatar-text">U</span>
+            </div>
+            <span class="user-menu__name" id="nav-user-name"></span>
+            <span style="font-size:10px;color:var(--brand-muted)">▼</span>
+          </button>
+          <div class="user-menu__dropdown" role="menu">
+            <div class="user-menu__header">
+              <div class="user-menu__user-name" id="nav-user-name-2"></div>
+              <div class="user-menu__user-email" id="nav-user-email"></div>
+            </div>
+            <a class="user-menu__item" href="/pages/account.html" role="menuitem">👤 My Account</a>
+            <a class="user-menu__item" href="/pages/orders.html" role="menuitem">📦 My Orders</a>
+            <a class="user-menu__item" href="/pages/account.html#wishlist" role="menuitem">🤍 Wishlist</a>
+            <div class="user-menu__divider"></div>
+            <button class="user-menu__item user-menu__item--danger w-full" onclick="Auth.logout()" role="menuitem">
+              🚪 Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== CATEGORY NAV ===== -->
+<div class="category-nav" role="navigation" aria-label="Product categories">
+  <div class="container">
+    <div class="category-nav__inner" id="category-nav">
+      <a class="category-nav__item active" href="/pages/shop.html">🏪 All</a>
+      <!-- Categories loaded dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- ===== HERO ===== -->
+<section class="hero" aria-label="Hero banner">
+  <div class="container">
+    <div class="hero__inner">
+      <div class="hero__content">
+        <div class="hero__eyebrow">✨ New Arrivals Every Week</div>
+        <h1 class="hero__title">
+          Discover Products<br>
+          You'll <mark>Love</mark> &amp;<br>
+          Treasure Forever
+        </h1>
+        <p class="hero__desc">
+          From the latest gadgets to timeless fashion — find everything you need
+          with fast, reliable delivery across Nigeria and beyond.
+        </p>
+        <div class="hero__cta-group">
+          <a href="/pages/shop.html" class="btn btn--primary btn--lg">
+            Shop Now →
+          </a>
+          <a href="/pages/shop.html?featured=true" class="btn btn--outline-dark btn--lg">
+            View Featured
+          </a>
+        </div>
+        <div class="hero__stats">
+          <div>
+            <div class="hero__stat-value" id="stat-products">10K+</div>
+            <div class="hero__stat-label">Products</div>
+          </div>
+          <div>
+            <div class="hero__stat-value">50K+</div>
+            <div class="hero__stat-label">Customers</div>
+          </div>
+          <div>
+            <div class="hero__stat-value">4.9★</div>
+            <div class="hero__stat-label">Rating</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero__image-wrap">
+        <img class="hero__image"
+          src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=700&q=80"
+          alt="Shopping experience" width="640" height="600" loading="eager">
+        <!-- Floating cards -->
+        <div class="hero__floating-card hero__floating-card--1">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:24px;">📦</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--brand-dark)">Order Delivered!</div>
+              <div style="font-size:11px;color:var(--brand-muted)">Just 2 days</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero__floating-card hero__floating-card--2">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:24px;">💳</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--brand-dark)">Secure Payment</div>
+              <div style="font-size:11px;color:var(--brand-muted)">Paystack · Flutterwave · PayPal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES STRIP ===== -->
+<section style="background:var(--brand-white);padding:var(--space-8) 0;border-bottom:1px solid var(--brand-border-light);">
+  <div class="container">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-6);">
+      <div style="display:flex;align-items:center;gap:var(--space-4);">
+        <div style="font-size:32px;">🚚</div>
+        <div>
+          <div style="font-size:var(--text-sm);font-weight:700;color:var(--brand-dark);">Free Shipping</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-muted);">On orders over ₦50,000</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-4);">
+        <div style="font-size:32px;">🔄</div>
+        <div>
+          <div style="font-size:var(--text-sm);font-weight:700;color:var(--brand-dark);">Easy Returns</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-muted);">30-day hassle-free returns</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-4);">
+        <div style="font-size:32px;">🔒</div>
+        <div>
+          <div style="font-size:var(--text-sm);font-weight:700;color:var(--brand-dark);">Secure Payments</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-muted);">100% encrypted checkout</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-4);">
+        <div style="font-size:32px;">💬</div>
+        <div>
+          <div style="font-size:var(--text-sm);font-weight:700;color:var(--brand-dark);">24/7 Support</div>
+          <div style="font-size:var(--text-xs);color:var(--brand-muted);">Always here to help</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CATEGORIES GRID ===== -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-header__left">
+        <div class="section-eyebrow">Browse</div>
+        <h2 class="section-title">Shop by <span>Category</span></h2>
+      </div>
+      <a href="/pages/shop.html" class="btn btn--outline">View All →</a>
+    </div>
+    <div id="categories-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);">
+      <!-- Loaded dynamically -->
+      <div class="skeleton" style="height:140px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:140px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:140px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:140px;border-radius:var(--radius-xl);"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURED PRODUCTS ===== -->
+<section class="section" style="background:var(--brand-light);">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-header__left">
+        <div class="section-eyebrow">✨ Handpicked</div>
+        <h2 class="section-title">Featured <span>Products</span></h2>
+      </div>
+      <a href="/pages/shop.html?featured=true" class="btn btn--outline">View All →</a>
+    </div>
+    <div class="products-grid" id="featured-grid">
+      <!-- Skeleton -->
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROMO BANNER ===== -->
+<section style="background:linear-gradient(135deg,var(--brand-primary) 0%,#E5501A 100%);padding:var(--space-12) 0;">
+  <div class="container" style="text-align:center;">
+    <p style="font-size:var(--text-sm);font-weight:600;color:rgba(255,255,255,0.8);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:var(--space-3);">
+      Limited Time Offer
+    </p>
+    <h2 style="font-family:var(--font-display);font-size:var(--text-4xl);color:white;margin-bottom:var(--space-4);">
+      Up to 50% Off Selected Items
+    </h2>
+    <p style="font-size:var(--text-md);color:rgba(255,255,255,0.85);margin-bottom:var(--space-8);">
+      Don't miss out — deals end this weekend!
+    </p>
+    <a href="/pages/shop.html?sale=true" class="btn btn--dark btn--lg" style="background:white;color:var(--brand-primary);">
+      Shop the Sale →
+    </a>
+  </div>
+</section>
+
+<!-- ===== NEW ARRIVALS ===== -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-header__left">
+        <div class="section-eyebrow">🆕 Fresh In</div>
+        <h2 class="section-title">New <span>Arrivals</span></h2>
+      </div>
+      <a href="/pages/shop.html?sort=newest" class="btn btn--outline">View All →</a>
+    </div>
+    <div class="products-grid" id="new-arrivals-grid">
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BESTSELLERS ===== -->
+<section class="section" style="background:var(--brand-light);">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-header__left">
+        <div class="section-eyebrow">🔥 Top Picks</div>
+        <h2 class="section-title">Best <span>Sellers</span></h2>
+      </div>
+      <a href="/pages/shop.html?sort=popular" class="btn btn--outline">View All →</a>
+    </div>
+    <div class="products-grid" id="bestsellers-grid">
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+      <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TESTIMONIALS ===== -->
+<section class="section">
+  <div class="container">
+    <div class="section-header" style="justify-content:center;text-align:center;flex-direction:column;align-items:center;margin-bottom:var(--space-10);">
+      <div class="section-eyebrow">💬 Reviews</div>
+      <h2 class="section-title">What Our Customers <span>Say</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-5);" id="testimonials">
+      <!-- Static testimonials -->
+      <div class="card">
+        <div class="card__body">
+          <div style="color:var(--brand-gold);font-size:18px;margin-bottom:var(--space-3);">★★★★★</div>
+          <p style="font-size:var(--text-sm);color:var(--brand-mid);line-height:1.7;margin-bottom:var(--space-4);">
+            "ShopWave has completely changed how I shop online. The delivery was incredibly fast and everything was exactly as described."
+          </p>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--brand-primary-bg);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brand-primary);">A</div>
+            <div>
+              <div style="font-weight:600;font-size:var(--text-sm);">Adaeze Okonkwo</div>
+              <div style="font-size:var(--text-xs);color:var(--brand-muted);">Lagos, Nigeria</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__body">
+          <div style="color:var(--brand-gold);font-size:18px;margin-bottom:var(--space-3);">★★★★★</div>
+          <p style="font-size:var(--text-sm);color:var(--brand-mid);line-height:1.7;margin-bottom:var(--space-4);">
+            "Great variety, fair prices, and their customer support team is absolutely top-notch. Will definitely be coming back!"
+          </p>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--brand-secondary-bg);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brand-secondary);">C</div>
+            <div>
+              <div style="font-weight:600;font-size:var(--text-sm);">Chidi Eze</div>
+              <div style="font-size:var(--text-xs);color:var(--brand-muted);">Abuja, Nigeria</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__body">
+          <div style="color:var(--brand-gold);font-size:18px;margin-bottom:var(--space-3);">★★★★☆</div>
+          <p style="font-size:var(--text-sm);color:var(--brand-mid);line-height:1.7;margin-bottom:var(--space-4);">
+            "Very impressed with the digital product downloads — instant access and great quality. ShopWave is my go-to marketplace!"
+          </p>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:40px;height:40px;border-radius:50%;background:#FFF8E1;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brand-gold);">F</div>
+            <div>
+              <div style="font-weight:600;font-size:var(--text-sm);">Fatima Aliyu</div>
+              <div style="font-size:var(--text-xs);color:var(--brand-muted);">Kano, Nigeria</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== NEWSLETTER ===== -->
+<section style="background:var(--brand-dark);padding:var(--space-16) 0;">
+  <div class="container" style="max-width:600px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:var(--space-4);">📬</div>
+    <h2 style="font-family:var(--font-display);font-size:var(--text-3xl);color:white;margin-bottom:var(--space-3);">
+      Stay in the Loop
+    </h2>
+    <p style="color:rgba(255,255,255,0.7);margin-bottom:var(--space-8);">
+      Get exclusive deals, new arrivals, and more delivered straight to your inbox.
+    </p>
+    <form id="newsletter-form" style="display:flex;gap:var(--space-3);" onsubmit="handleNewsletter(event)">
+      <input type="email" class="form-control" placeholder="Enter your email address"
+        required style="flex:1;background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:white;">
+      <button type="submit" class="btn btn--primary">Subscribe</button>
+    </form>
+    <p style="font-size:var(--text-xs);color:rgba(255,255,255,0.4);margin-top:var(--space-4);">
+      No spam, ever. Unsubscribe anytime.
+    </p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <div class="footer__grid">
+      <!-- Brand -->
+      <div>
+        <div class="footer__brand-logo">
+          <div class="footer__brand-icon">🌊</div>
+          <span class="footer__brand-name">ShopWave</span>
+        </div>
+        <p class="footer__tagline">
+          Your one-stop marketplace for everything you need — from the latest tech to timeless style, delivered fast across Nigeria.
+        </p>
+        <div class="footer__social">
+          <a href="#" class="footer__social-link" aria-label="Facebook">f</a>
+          <a href="#" class="footer__social-link" aria-label="Instagram">📸</a>
+          <a href="#" class="footer__social-link" aria-label="Twitter">𝕏</a>
+          <a href="#" class="footer__social-link" aria-label="WhatsApp">💬</a>
+        </div>
+      </div>
+
+      <!-- Shop -->
+      <div>
+        <div class="footer__heading">Shop</div>
+        <div class="footer__links">
+          <a href="/pages/shop.html" class="footer__link">All Products</a>
+          <a href="/pages/shop.html?featured=true" class="footer__link">Featured</a>
+          <a href="/pages/shop.html?sort=newest" class="footer__link">New Arrivals</a>
+          <a href="/pages/shop.html?sort=popular" class="footer__link">Best Sellers</a>
+          <a href="/pages/shop.html?sale=true" class="footer__link">Sale</a>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div>
+        <div class="footer__heading">Account</div>
+        <div class="footer__links">
+          <a href="/pages/auth.html" class="footer__link">Login / Register</a>
+          <a href="/pages/account.html" class="footer__link">My Profile</a>
+          <a href="/pages/orders.html" class="footer__link">My Orders</a>
+          <a href="/pages/account.html#wishlist" class="footer__link">Wishlist</a>
+        </div>
+      </div>
+
+      <!-- Help -->
+      <div>
+        <div class="footer__heading">Help</div>
+        <div class="footer__links">
+          <a href="/pages/faq.html" class="footer__link">FAQ</a>
+          <a href="/pages/contact.html" class="footer__link">Contact Us</a>
+          <a href="/pages/shipping.html" class="footer__link">Shipping Policy</a>
+          <a href="/pages/returns.html" class="footer__link">Returns Policy</a>
+          <a href="/pages/privacy.html" class="footer__link">Privacy Policy</a>
+          <a href="/pages/terms.html" class="footer__link">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <div class="footer__copy">© 2025 ShopWave. All rights reserved.</div>
+      <div class="footer__payment-icons">
+        <span class="footer__payment-icon">Paystack</span>
+        <span class="footer__payment-icon">Flutterwave</span>
+        <span class="footer__payment-icon">PayPal</span>
+        <span class="footer__payment-icon">Visa</span>
+        <span class="footer__payment-icon">Mastercard</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/core.js"></script>
+<script>
+// ===== Homepage Logic =====
+
+// Load categories into category nav and grid
+async function loadCategories() {
+  try {
+    const data = await API.get('/products/categories');
+    const cats = data.categories || [];
+
+    // Category nav
+    const nav = document.getElementById('category-nav');
+    const navItems = cats.map(c =>
+      `<a class="category-nav__item" href="/pages/shop.html?category=${c.slug}">
+        ${c.icon || ''} ${Utils.sanitize(c.name)}
+      </a>`).join('');
+    nav.innerHTML = `<a class="category-nav__item active" href="/pages/shop.html">🏪 All</a>${navItems}`;
+
+    // Categories grid
+    const grid = document.getElementById('categories-grid');
+    const gridItems = cats.slice(0, 8).map(c => `
+      <a href="/pages/shop.html?category=${c.slug}" style="
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        background:var(--brand-white);border-radius:var(--radius-xl);
+        padding:var(--space-6);text-align:center;box-shadow:var(--shadow-card);
+        transition:all var(--transition-base);text-decoration:none;gap:var(--space-3);"
+        onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='var(--shadow-card-hover)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-card)'">
+        <div style="font-size:36px;line-height:1;">${c.icon || '📦'}</div>
+        <div style="font-size:var(--text-sm);font-weight:600;color:var(--brand-dark);">${Utils.sanitize(c.name)}</div>
+      </a>`).join('');
+    grid.innerHTML = gridItems || '<p style="color:var(--brand-muted);">Categories coming soon.</p>';
+  } catch (e) {
+    console.error('Categories error:', e);
+    document.getElementById('categories-grid').innerHTML = '<p style="color:var(--brand-muted);grid-column:1/-1;">Could not load categories.</p>';
+  }
+}
+
+// Load products into a grid
+async function loadProducts(gridId, params, limit = 4) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+
+  try {
+    const data = await API.get('/products', { ...params, limit });
+    const products = data.products || [];
+
+    if (!products.length) {
+      grid.innerHTML = '<p style="color:var(--brand-muted);grid-column:1/-1;text-align:center;padding:40px 0;">No products found.</p>';
+      return;
+    }
+
+    grid.innerHTML = products.map(p => ProductCard.render(p)).join('');
+  } catch (e) {
+    grid.innerHTML = '<p style="color:var(--brand-muted);grid-column:1/-1;text-align:center;padding:40px 0;">Could not load products.</p>';
+  }
+}
+
+// Newsletter
+function handleNewsletter(e) {
+  e.preventDefault();
+  const email = e.target.querySelector('input').value;
+  // In production: POST to /api/newsletter
+  Toast.success('Subscribed!', `${email} has been added to our list.`);
+  e.target.reset();
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  loadCategories();
+  loadProducts('featured-grid', { featured: true, sort: 'popular' }, 4);
+  loadProducts('new-arrivals-grid', { sort: 'newest' }, 4);
+  loadProducts('bestsellers-grid', { sort: 'popular' }, 4);
+});
+</script>
+</body>
+</html>

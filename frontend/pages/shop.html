@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Browse all products on ShopWave — filter by category, price, rating and more.">
+  <title>Shop — ShopWave</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<!-- Navbar (reuse shared component) -->
+<div class="topbar">🎉 Free shipping on orders over ₦50,000 — <a href="#">Shop Now</a></div>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar__inner">
+      <a href="/" class="navbar__logo">
+        <div class="navbar__logo-icon">🌊</div>
+        <span class="navbar__logo-text">Shop<span>Wave</span></span>
+      </a>
+      <div class="navbar__search" role="search">
+        <span class="navbar__search-icon">🔍</span>
+        <input type="search" id="navbar-search" class="navbar__search-input"
+          placeholder="Search products…" autocomplete="off" aria-label="Search">
+        <div class="search-dropdown" id="search-dropdown"></div>
+      </div>
+      <div class="navbar__actions">
+        <a href="/pages/account.html#wishlist" class="navbar__action-btn">🤍</a>
+        <button class="navbar__action-btn" data-open-cart>🛒
+          <span class="navbar__badge" data-cart-badge style="display:none;">0</span>
+        </button>
+        <div id="nav-guest" class="flex gap-2">
+          <a href="/pages/auth.html" class="btn btn--outline btn--sm">Login</a>
+          <a href="/pages/auth.html?tab=register" class="btn btn--primary btn--sm">Sign Up</a>
+        </div>
+        <div class="user-menu hidden" id="nav-user">
+          <button class="user-menu__trigger">
+            <div class="user-menu__avatar"><span id="nav-avatar-text">U</span></div>
+            <span class="user-menu__name" id="nav-user-name"></span>
+            <span style="font-size:10px;color:var(--brand-muted)">▼</span>
+          </button>
+          <div class="user-menu__dropdown">
+            <div class="user-menu__header">
+              <div class="user-menu__user-name" id="nav-user-name-2"></div>
+              <div class="user-menu__user-email" id="nav-user-email"></div>
+            </div>
+            <a class="user-menu__item" href="/pages/account.html">👤 My Account</a>
+            <a class="user-menu__item" href="/pages/orders.html">📦 My Orders</a>
+            <div class="user-menu__divider"></div>
+            <button class="user-menu__item user-menu__item--danger w-full" onclick="Auth.logout()">🚪 Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Category Quick Nav -->
+<div class="category-nav">
+  <div class="container">
+    <div class="category-nav__inner" id="category-nav">
+      <a class="category-nav__item" href="/pages/shop.html">🏪 All</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SHOP PAGE ===== -->
+<div class="section--sm">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <div class="breadcrumb__item">
+        <a href="/" class="breadcrumb__link">Home</a>
+        <span class="breadcrumb__sep">›</span>
+      </div>
+      <div class="breadcrumb__item">
+        <span class="breadcrumb__current" id="breadcrumb-current">All Products</span>
+      </div>
+    </nav>
+
+    <div style="display:grid;grid-template-columns:var(--sidebar-width) 1fr;gap:var(--space-8);align-items:start;">
+
+      <!-- ===== SIDEBAR FILTERS ===== -->
+      <aside aria-label="Product filters">
+        <div class="filter-panel">
+          <div class="filter-panel__header">
+            <span class="filter-panel__title">Filters</span>
+            <button class="btn btn--ghost btn--sm" id="clear-filters" onclick="clearFilters()">Clear All</button>
+          </div>
+
+          <!-- Category Filter -->
+          <div class="filter-group">
+            <div class="filter-group__label">Category <span>▾</span></div>
+            <div class="filter-group__options" id="filter-categories">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Price Range -->
+          <div class="filter-group">
+            <div class="filter-group__label">Price Range</div>
+            <div class="price-range-inputs">
+              <input type="number" class="form-control" id="price-min" placeholder="Min ₦"
+                oninput="applyFilters()">
+              <span style="color:var(--brand-muted);">—</span>
+              <input type="number" class="form-control" id="price-max" placeholder="Max ₦"
+                oninput="applyFilters()">
+            </div>
+          </div>
+
+          <!-- Product Type -->
+          <div class="filter-group">
+            <div class="filter-group__label">Product Type</div>
+            <div class="filter-group__options">
+              <label class="checkbox-label">
+                <input type="checkbox" value="physical" onchange="applyFilters()"> Physical Products
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="digital" onchange="applyFilters()"> Digital Products
+              </label>
+            </div>
+          </div>
+
+          <!-- Stock -->
+          <div class="filter-group">
+            <div class="filter-group__label">Availability</div>
+            <div class="filter-group__options">
+              <label class="checkbox-label">
+                <input type="checkbox" id="filter-instock" onchange="applyFilters()"> In Stock Only
+              </label>
+            </div>
+          </div>
+
+          <!-- Rating -->
+          <div class="filter-group">
+            <div class="filter-group__label">Min Rating</div>
+            <div class="filter-group__options">
+              <label class="checkbox-label">
+                <input type="radio" name="rating" value="4" onchange="applyFilters()"> ★★★★+ (4 & up)
+              </label>
+              <label class="checkbox-label">
+                <input type="radio" name="rating" value="3" onchange="applyFilters()"> ★★★+ (3 & up)
+              </label>
+              <label class="checkbox-label">
+                <input type="radio" name="rating" value="" onchange="applyFilters()"> All Ratings
+              </label>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ===== MAIN CONTENT ===== -->
+      <main>
+        <!-- Top bar: results count + sort -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5);flex-wrap:wrap;gap:var(--space-3);">
+          <div>
+            <h1 id="page-title" style="font-size:var(--text-2xl);font-weight:700;">All Products</h1>
+            <p id="result-count" style="font-size:var(--text-sm);color:var(--brand-muted);margin-top:2px;">Loading…</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <!-- View toggle -->
+            <div style="display:flex;border:1.5px solid var(--brand-border);border-radius:var(--radius-md);overflow:hidden;">
+              <button class="btn btn--ghost btn--sm" id="grid-view-btn" onclick="setView('grid')"
+                style="border-radius:0;border-right:1.5px solid var(--brand-border);">⊞</button>
+              <button class="btn btn--ghost btn--sm" id="list-view-btn" onclick="setView('list')"
+                style="border-radius:0;">☰</button>
+            </div>
+
+            <!-- Sort -->
+            <select class="form-control" id="sort-select" onchange="applyFilters()"
+              style="width:auto;padding-right:2.5rem;">
+              <option value="newest">Newest First</option>
+              <option value="popular">Most Popular</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Active filters tags -->
+        <div id="active-filters" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:var(--space-4);"></div>
+
+        <!-- Products Grid -->
+        <div class="products-grid" id="products-grid">
+          <!-- Skeleton -->
+          <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+          <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+          <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+          <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+          <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+          <div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__bottom" style="padding-top:0;border-top:none;">
+      <div class="footer__copy">© 2025 ShopWave. All rights reserved.</div>
+      <div class="footer__payment-icons">
+        <span class="footer__payment-icon">Paystack</span>
+        <span class="footer__payment-icon">Flutterwave</span>
+        <span class="footer__payment-icon">PayPal</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/core.js"></script>
+<script>
+// ===== Shop Page =====
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let currentView = 'grid';
+
+// Read URL params on load
+function getFilters() {
+  return {
+    q:        Utils.param('q') || '',
+    category: Utils.param('category') || '',
+    sort:     Utils.param('sort') || document.getElementById('sort-select')?.value || 'newest',
+    min_price: document.getElementById('price-min')?.value || '',
+    max_price: document.getElementById('price-max')?.value || '',
+    in_stock:  document.getElementById('filter-instock')?.checked ? 'true' : '',
+    featured:  Utils.param('featured') || '',
+    sale:      Utils.param('sale') || '',
+    type:      [...document.querySelectorAll('input[type="checkbox"][value="physical"], input[type="checkbox"][value="digital"]')]
+                .filter(c => c.checked).map(c => c.value).join(','),
+    rating:   document.querySelector('input[name="rating"]:checked')?.value || '',
+    page:     currentPage,
+    limit:    PAGE_SIZE,
+  };
+}
+
+async function loadProducts() {
+  const grid = document.getElementById('products-grid');
+  const countEl = document.getElementById('result-count');
+  const filters = getFilters();
+
+  // Show skeleton
+  grid.innerHTML = Array(6).fill(`<div class="skeleton" style="height:340px;border-radius:var(--radius-xl);"></div>`).join('');
+  if (countEl) countEl.textContent = 'Loading…';
+
+  try {
+    const data = await API.get('/products', filters);
+    const products = data.products || [];
+    const total = data.total || 0;
+
+    if (countEl) countEl.textContent = `${total.toLocaleString()} product${total !== 1 ? 's' : ''} found`;
+
+    if (!products.length) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:var(--space-16) 0;">
+          <div style="font-size:48px;margin-bottom:var(--space-4);">🔍</div>
+          <h3 style="font-size:var(--text-xl);margin-bottom:var(--space-3);">No products found</h3>
+          <p style="color:var(--brand-muted);margin-bottom:var(--space-6);">Try adjusting your filters or search term.</p>
+          <button class="btn btn--primary" onclick="clearFilters()">Clear Filters</button>
+        </div>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    grid.innerHTML = products.map(p => ProductCard.render(p)).join('');
+    renderPagination(total);
+    updateActiveFilters(filters);
+    Utils.setParams({ q: filters.q, category: filters.category, sort: filters.sort });
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--brand-muted);">
+      Failed to load products. <button class="btn btn--outline btn--sm" onclick="loadProducts()">Retry</button></div>`;
+  }
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+      html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (Math.abs(i - currentPage) === 3) {
+      html += `<span style="padding:0 4px;color:var(--brand-muted);">…</span>`;
+    }
+  }
+
+  html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+  pag.innerHTML = html;
+}
+
+function goPage(p) {
+  if (p < 1) return;
+  currentPage = p;
+  loadProducts();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function applyFilters() {
+  currentPage = 1;
+  loadProducts();
+}
+
+function clearFilters() {
+  document.querySelectorAll('.filter-panel input').forEach(el => {
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+    else el.value = '';
+  });
+  document.getElementById('sort-select').value = 'newest';
+  currentPage = 1;
+  loadProducts();
+}
+
+function updateActiveFilters(filters) {
+  const container = document.getElementById('active-filters');
+  const tags = [];
+
+  if (filters.q) tags.push({ label: `Search: "${filters.q}"`, key: 'q' });
+  if (filters.category) tags.push({ label: `Category: ${filters.category}`, key: 'category' });
+  if (filters.min_price) tags.push({ label: `Min: ₦${parseInt(filters.min_price).toLocaleString()}`, key: 'min_price' });
+  if (filters.max_price) tags.push({ label: `Max: ₦${parseInt(filters.max_price).toLocaleString()}`, key: 'max_price' });
+  if (filters.in_stock) tags.push({ label: 'In Stock Only', key: 'in_stock' });
+
+  container.innerHTML = tags.map(t =>
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:var(--brand-primary-bg);color:var(--brand-primary);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;">
+      ${Utils.sanitize(t.label)}
+      <button onclick="removeFilter('${t.key}')" style="font-size:14px;line-height:1;color:var(--brand-primary);">✕</button>
+    </span>`).join('');
+}
+
+function removeFilter(key) {
+  if (key === 'q') document.getElementById('navbar-search').value = '';
+  if (key === 'min_price') document.getElementById('price-min').value = '';
+  if (key === 'max_price') document.getElementById('price-max').value = '';
+  if (key === 'in_stock') document.getElementById('filter-instock').checked = false;
+  applyFilters();
+}
+
+function setView(view) {
+  currentView = view;
+  const grid = document.getElementById('products-grid');
+  if (view === 'list') {
+    grid.style.gridTemplateColumns = '1fr';
+  } else {
+    grid.style.gridTemplateColumns = '';
+  }
+  document.getElementById('grid-view-btn').style.background = view === 'grid' ? 'var(--brand-primary-bg)' : '';
+  document.getElementById('list-view-btn').style.background = view === 'list' ? 'var(--brand-primary-bg)' : '';
+}
+
+// Load categories into sidebar
+async function loadCategoryFilters() {
+  try {
+    const data = await API.get('/products/categories');
+    const cats = data.categories || [];
+
+    // Category nav
+    const nav = document.getElementById('category-nav');
+    const currentCat = Utils.param('category');
+    nav.innerHTML = `<a class="category-nav__item ${!currentCat ? 'active' : ''}" href="/pages/shop.html">🏪 All</a>` +
+      cats.map(c => `<a class="category-nav__item ${currentCat === c.slug ? 'active' : ''}"
+        href="/pages/shop.html?category=${c.slug}">${c.icon || ''} ${Utils.sanitize(c.name)}</a>`).join('');
+
+    // Sidebar filter
+    const filterEl = document.getElementById('filter-categories');
+    filterEl.innerHTML = cats.map(c => `
+      <label class="checkbox-label">
+        <input type="checkbox" value="${c.slug}" onchange="applyFilters()"
+          ${Utils.param('category') === c.slug ? 'checked' : ''}>
+        ${c.icon || ''} ${Utils.sanitize(c.name)}
+      </label>`).join('');
+
+    // Page title from category
+    if (currentCat) {
+      const cat = cats.find(c => c.slug === currentCat);
+      if (cat) {
+        document.getElementById('page-title').textContent = cat.name;
+        document.getElementById('breadcrumb-current').textContent = cat.name;
+        document.title = `${cat.name} — ShopWave`;
+      }
+    }
+
+    const q = Utils.param('q');
+    if (q) {
+      document.getElementById('page-title').textContent = `Search: "${q}"`;
+      document.getElementById('breadcrumb-current').textContent = `Search: "${q}"`;
+    }
+  } catch {}
+}
+
+// Init page
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadCategoryFilters();
+  loadProducts();
+});
+</script>
+</body>
+</html>

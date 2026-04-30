@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — ShopWave</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <!-- Payment SDKs -->
+  <script src="https://js.paystack.co/v1/inline.js" defer></script>
+  <script src="https://checkout.flutterwave.com/v3.js" defer></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="navbar__inner">
+      <a href="/" class="navbar__logo">
+        <div class="navbar__logo-icon">🌊</div>
+        <span class="navbar__logo-text">Shop<span>Wave</span></span>
+      </a>
+      <!-- Checkout steps indicator -->
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin:0 auto;" id="checkout-steps">
+        <div class="step active" data-step="1">
+          <span class="step-num">1</span> <span class="step-label">Information</span>
+        </div>
+        <span style="color:var(--brand-border);">───</span>
+        <div class="step" data-step="2">
+          <span class="step-num">2</span> <span class="step-label">Shipping</span>
+        </div>
+        <span style="color:var(--brand-border);">───</span>
+        <div class="step" data-step="3">
+          <span class="step-num">3</span> <span class="step-label">Payment</span>
+        </div>
+      </div>
+      <div class="navbar__actions">
+        <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-sm);color:var(--brand-muted);">
+          🔒 Secure Checkout
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<style>
+.checkout-grid { display: grid; grid-template-columns: 1fr 400px; gap: var(--space-8); align-items: start; padding: var(--space-8) 0; }
+.checkout-form-card { background: var(--brand-white); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); }
+.checkout-form-card__header { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--brand-border-light); display: flex; align-items: center; justify-content: space-between; }
+.checkout-form-card__title { font-size: var(--text-lg); font-weight: 700; }
+.checkout-form-card__body { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.step { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--brand-muted); }
+.step-num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--brand-border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.step.active .step-num { background: var(--brand-primary); border-color: var(--brand-primary); color: white; }
+.step.active .step-label { color: var(--brand-dark); font-weight: 600; }
+.step.done .step-num { background: var(--color-success); border-color: var(--color-success); color: white; }
+.payment-option { border: 2px solid var(--brand-border); border-radius: var(--radius-lg); padding: var(--space-4); cursor: pointer; transition: all var(--transition-fast); display: flex; align-items: center; gap: var(--space-4); }
+.payment-option:hover { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
+.payment-option.selected { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
+.payment-option input[type="radio"] { accent-color: var(--brand-primary); }
+.payment-option__icon { font-size: 24px; }
+.payment-option__info { flex: 1; }
+.payment-option__name { font-weight: 700; font-size: var(--text-sm); }
+.payment-option__desc { font-size: var(--text-xs); color: var(--brand-muted); }
+.order-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--brand-border-light); }
+.order-item:last-child { border-bottom: none; }
+.order-item__img { width: 56px; height: 56px; border-radius: var(--radius-md); object-fit: cover; background: var(--brand-light); flex-shrink: 0; position: relative; }
+.order-item__qty-badge { position: absolute; top: -6px; right: -6px; background: var(--brand-dark); color: white; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.order-item__name { flex: 1; font-size: var(--text-sm); font-weight: 600; }
+.order-item__price { font-size: var(--text-sm); font-weight: 700; }
+</style>
+
+<div class="container">
+  <div class="checkout-grid">
+
+    <!-- LEFT: Form panels -->
+    <div id="checkout-panels" style="display:flex;flex-direction:column;gap:var(--space-5);">
+
+      <!-- Panel 1: Contact Info -->
+      <div class="checkout-form-card" id="panel-info">
+        <div class="checkout-form-card__header">
+          <div class="checkout-form-card__title">1. Contact Information</div>
+          <div id="info-done-badge" style="display:none;" class="badge badge--success">✓ Done</div>
+        </div>
+        <div class="checkout-form-card__body" id="panel-info-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First Name *</label>
+              <input type="text" id="fname" class="form-control" placeholder="Adaeze" required autocomplete="given-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name *</label>
+              <input type="text" id="lname" class="form-control" placeholder="Okonkwo" required autocomplete="family-name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="tel" id="phone" class="form-control" placeholder="+234 801 234 5678" required autocomplete="tel">
+          </div>
+          <button class="btn btn--primary" onclick="submitInfo()">Continue to Shipping →</button>
+        </div>
+      </div>
+
+      <!-- Panel 2: Shipping -->
+      <div class="checkout-form-card" id="panel-shipping" style="opacity:0.5;pointer-events:none;">
+        <div class="checkout-form-card__header">
+          <div class="checkout-form-card__title">2. Shipping Address</div>
+          <div id="shipping-done-badge" style="display:none;" class="badge badge--success">✓ Done</div>
+        </div>
+        <div class="checkout-form-card__body" id="panel-shipping-body">
+          <div class="form-group">
+            <label class="form-label">Address Line 1 *</label>
+            <input type="text" id="addr1" class="form-control" placeholder="15 Admiralty Road" required autocomplete="address-line1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address Line 2</label>
+            <input type="text" id="addr2" class="form-control" placeholder="Lekki Phase 1" autocomplete="address-line2">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">City *</label>
+              <input type="text" id="city" class="form-control" placeholder="Lagos" required autocomplete="address-level2">
+            </div>
+            <div class="form-group">
+              <label class="form-label">State *</label>
+              <select id="state" class="form-control" required>
+                <option value="">Select State</option>
+                <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option>
+                <option>Anambra</option><option>Bauchi</option><option>Bayelsa</option>
+                <option>Benue</option><option>Borno</option><option>Cross River</option>
+                <option>Delta</option><option>Ebonyi</option><option>Edo</option>
+                <option>Ekiti</option><option>Enugu</option><option>FCT</option>
+                <option>Gombe</option><option>Imo</option><option>Jigawa</option>
+                <option>Kaduna</option><option>Kano</option><option>Katsina</option>
+                <option>Kebbi</option><option>Kogi</option><option>Kwara</option>
+                <option selected>Lagos</option><option>Nassarawa</option><option>Niger</option>
+                <option>Ogun</option><option>Ondo</option><option>Osun</option>
+                <option>Oyo</option><option>Plateau</option><option>Rivers</option>
+                <option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Country *</label>
+              <input type="text" id="country" class="form-control" value="Nigeria" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Postal Code</label>
+              <input type="text" id="postal" class="form-control" placeholder="100001" autocomplete="postal-code">
+            </div>
+          </div>
+          <!-- Shipping method -->
+          <div class="form-group">
+            <label class="form-label">Shipping Method *</label>
+            <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+              <label class="payment-option" onclick="selectShipping(this,'standard',1500)">
+                <input type="radio" name="shipping_method" value="standard" checked>
+                <div class="payment-option__icon">📦</div>
+                <div class="payment-option__info">
+                  <div class="payment-option__name">Standard Shipping</div>
+                  <div class="payment-option__desc">3–5 business days</div>
+                </div>
+                <div style="font-weight:700;" id="std-shipping-cost">₦1,500</div>
+              </label>
+              <label class="payment-option" onclick="selectShipping(this,'express',3500)">
+                <input type="radio" name="shipping_method" value="express">
+                <div class="payment-option__icon">⚡</div>
+                <div class="payment-option__info">
+                  <div class="payment-option__name">Express Shipping</div>
+                  <div class="payment-option__desc">1–2 business days</div>
+                </div>
+                <div style="font-weight:700;">₦3,500</div>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Order Notes (Optional)</label>
+            <textarea id="order-notes" class="form-control" rows="2" placeholder="Any special instructions?"></textarea>
+          </div>
+          <div style="display:flex;gap:var(--space-3);">
+            <button class="btn btn--ghost" onclick="backToInfo()">← Back</button>
+            <button class="btn btn--primary" onclick="submitShipping()">Continue to Payment →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Payment -->
+      <div class="checkout-form-card" id="panel-payment" style="opacity:0.5;pointer-events:none;">
+        <div class="checkout-form-card__header">
+          <div class="checkout-form-card__title">3. Payment Method</div>
+        </div>
+        <div class="checkout-form-card__body">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3);" id="payment-options">
+            <label class="payment-option selected" onclick="selectPayment(this,'paystack')">
+              <input type="radio" name="payment" value="paystack" checked>
+              <div class="payment-option__icon">💳</div>
+              <div class="payment-option__info">
+                <div class="payment-option__name">Paystack</div>
+                <div class="payment-option__desc">Pay with card, bank transfer, or USSD</div>
+              </div>
+              <img src="https://www.paystack.com/favicon.png" style="width:24px;height:24px;border-radius:4px;" alt="Paystack" onerror="this.style.display='none'">
+            </label>
+            <label class="payment-option" onclick="selectPayment(this,'flutterwave')">
+              <input type="radio" name="payment" value="flutterwave">
+              <div class="payment-option__icon">🌊</div>
+              <div class="payment-option__info">
+                <div class="payment-option__name">Flutterwave</div>
+                <div class="payment-option__desc">Cards, mobile money, bank transfer</div>
+              </div>
+            </label>
+            <label class="payment-option" onclick="selectPayment(this,'paypal')">
+              <input type="radio" name="payment" value="paypal">
+              <div class="payment-option__icon">🅿️</div>
+              <div class="payment-option__info">
+                <div class="payment-option__name">PayPal</div>
+                <div class="payment-option__desc">International payments</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- PayPal button container -->
+          <div id="paypal-button-container" style="display:none;margin-top:12px;"></div>
+
+          <div style="padding:var(--space-4);background:var(--brand-light);border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--brand-mid);">
+            🔒 Your payment is secured with 256-bit SSL encryption. We never store your card details.
+          </div>
+
+          <div style="display:flex;gap:var(--space-3);">
+            <button class="btn btn--ghost" onclick="backToShipping()">← Back</button>
+            <button class="btn btn--primary btn--lg" id="pay-btn" onclick="processPayment()" style="flex:1;">
+              Pay <span id="pay-amount"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Order Summary -->
+    <div>
+      <div style="background:var(--brand-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);overflow:hidden;position:sticky;top:calc(var(--nav-height) + 20px);">
+        <div style="padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--brand-border-light);">
+          <div style="font-size:var(--text-lg);font-weight:700;">Order Summary</div>
+        </div>
+        <div style="padding:var(--space-5) var(--space-6);">
+          <div id="order-items-list" style="margin-bottom:var(--space-5);"></div>
+          <div style="height:1px;background:var(--brand-border-light);margin-bottom:var(--space-4);"></div>
+          <div class="summary-row" style="margin-bottom:12px;font-size:var(--text-sm);color:var(--brand-mid);display:flex;justify-content:space-between;">
+            <span>Subtotal</span><span id="summary-subtotal"></span>
+          </div>
+          <div class="summary-row" style="margin-bottom:12px;font-size:var(--text-sm);color:var(--brand-mid);display:flex;justify-content:space-between;" id="summary-shipping-row">
+            <span>Shipping</span><span id="summary-shipping"></span>
+          </div>
+          <div id="summary-coupon-row" style="display:none;margin-bottom:12px;font-size:var(--text-sm);color:var(--color-success);display:flex;justify-content:space-between;">
+            <span>Discount</span><span id="summary-coupon-amt"></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-xl);font-weight:700;padding-top:var(--space-4);border-top:2px solid var(--brand-border);">
+            <span>Total</span>
+            <span style="color:var(--brand-primary);" id="summary-total"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer" style="margin-top:var(--space-12);">
+  <div class="container">
+    <div class="footer__bottom" style="padding-top:0;border-top:none;">
+      <div class="footer__copy">© 2025 ShopWave. All rights reserved.</div>
+      <div class="footer__payment-icons">
+        <span class="footer__payment-icon">Paystack</span>
+        <span class="footer__payment-icon">Flutterwave</span>
+        <span class="footer__payment-icon">PayPal</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/core.js"></script>
+<script>
+// Checkout state
+let checkoutData = {
+  step: 1,
+  contact: {},
+  shipping: {},
+  shippingCost: 1500,
+  paymentMethod: 'paystack',
+  coupon: null,
+};
+
+// Init checkout
+document.addEventListener('DOMContentLoaded', () => {
+  const items = Cart.items();
+  if (!items.length) { window.location.href = '/pages/cart.html'; return; }
+
+  // Pre-fill if logged in
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('email').value = user.email || '';
+    if (user.full_name) {
+      const parts = user.full_name.split(' ');
+      document.getElementById('fname').value = parts[0] || '';
+      document.getElementById('lname').value = parts.slice(1).join(' ') || '';
+    }
+  }
+
+  // Load coupon from cart page
+  const coupon = sessionStorage.getItem('sw_coupon');
+  if (coupon) { try { checkoutData.coupon = JSON.parse(coupon); } catch {} }
+
+  // Check if all physical — show/hide shipping
+  const hasPhysical = items.some(i => i.product_type !== 'digital');
+  if (!hasPhysical) {
+    document.getElementById('panel-shipping').innerHTML = `
+      <div class="checkout-form-card__header">
+        <div class="checkout-form-card__title">2. Shipping</div>
+        <div class="badge badge--digital">Digital — No Shipping Required</div>
+      </div>`;
+    checkoutData.shippingCost = 0;
+  }
+
+  renderOrderSummary();
+  updatePayAmount();
+});
+
+function renderOrderSummary() {
+  const items = Cart.items();
+  const subtotal = Cart.subtotal();
+  const discount = checkoutData.coupon?.discount || 0;
+  const shipping = checkoutData.shippingCost;
+  const total = Math.max(0, subtotal - discount + shipping);
+
+  document.getElementById('order-items-list').innerHTML = items.map(item => `
+    <div class="order-item">
+      <div class="order-item__img">
+        <img src="${item.image || '/assets/placeholder.svg'}" alt="${Utils.sanitize(item.name)}"
+          style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius-md);"
+          onerror="this.src='/assets/placeholder.svg'">
+        <div class="order-item__qty-badge">${item.quantity}</div>
+      </div>
+      <div class="order-item__name">${Utils.sanitize(item.name)}</div>
+      <div class="order-item__price">${Utils.formatCurrency(item.price * item.quantity)}</div>
+    </div>`).join('');
+
+  document.getElementById('summary-subtotal').textContent = Utils.formatCurrency(subtotal);
+  document.getElementById('summary-shipping').textContent = shipping === 0 ? 'Free' : Utils.formatCurrency(shipping);
+  document.getElementById('summary-shipping').style.color = shipping === 0 ? 'var(--color-success)' : '';
+
+  if (discount > 0) {
+    document.getElementById('summary-coupon-row').style.display = 'flex';
+    document.getElementById('summary-coupon-amt').textContent = `-${Utils.formatCurrency(discount)}`;
+  }
+
+  document.getElementById('summary-total').textContent = Utils.formatCurrency(total);
+}
+
+function updatePayAmount() {
+  const subtotal = Cart.subtotal();
+  const discount = checkoutData.coupon?.discount || 0;
+  const total = Math.max(0, subtotal - discount + checkoutData.shippingCost);
+  const payBtn = document.getElementById('pay-amount');
+  if (payBtn) payBtn.textContent = Utils.formatCurrency(total);
+}
+
+function selectPayment(el, method) {
+  document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  checkoutData.paymentMethod = method;
+  document.getElementById('paypal-button-container').style.display = method === 'paypal' ? 'block' : 'none';
+  document.getElementById('pay-btn').style.display = method === 'paypal' ? 'none' : 'block';
+  if (method === 'paypal') initPayPalButtons();
+}
+
+function selectShipping(el, type, cost) {
+  document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  checkoutData.shippingCost = cost;
+  renderOrderSummary();
+  updatePayAmount();
+}
+
+// ===== Step navigation =====
+function setStepActive(step) {
+  checkoutData.step = step;
+  document.querySelectorAll('.step').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('active', s === step);
+    el.classList.toggle('done', s < step);
+  });
+}
+
+function enablePanel(id) {
+  const el = document.getElementById(id);
+  if (el) { el.style.opacity = '1'; el.style.pointerEvents = ''; }
+}
+
+function submitInfo() {
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+
+  if (!fname || !email || !phone) { Toast.error('Please fill in all required fields'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { Toast.error('Invalid email address'); return; }
+
+  checkoutData.contact = { fname, lname, email, phone };
+  document.getElementById('info-done-badge').style.display = 'inline-flex';
+  document.getElementById('panel-info-body').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:600;">${Utils.sanitize(fname)} ${Utils.sanitize(lname)}</div>
+        <div style="font-size:var(--text-sm);color:var(--brand-muted);">${Utils.sanitize(email)} · ${Utils.sanitize(phone)}</div>
+      </div>
+      <button class="btn btn--ghost btn--sm" onclick="editInfo()">Edit</button>
+    </div>`;
+
+  setStepActive(2);
+  enablePanel('panel-shipping');
+  document.getElementById('panel-shipping').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function editInfo() {
+  // Re-expand info panel
+  location.reload();
+}
+
+function submitShipping() {
+  const addr1 = document.getElementById('addr1').value.trim();
+  const city  = document.getElementById('city').value.trim();
+  const state = document.getElementById('state').value;
+
+  if (!addr1 || !city || !state) { Toast.error('Please fill in all required address fields'); return; }
+
+  checkoutData.shipping = {
+    address_line1: addr1,
+    address_line2: document.getElementById('addr2').value.trim(),
+    city, state,
+    country: 'Nigeria',
+    postal_code: document.getElementById('postal').value.trim(),
+    method: document.querySelector('input[name="shipping_method"]:checked')?.value || 'standard',
+    notes: document.getElementById('order-notes').value.trim(),
+  };
+
+  document.getElementById('shipping-done-badge').style.display = 'inline-flex';
+  setStepActive(3);
+  enablePanel('panel-payment');
+  document.getElementById('panel-payment').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function backToInfo() {
+  document.getElementById('panel-shipping').style.opacity = '0.5';
+  document.getElementById('panel-shipping').style.pointerEvents = 'none';
+  setStepActive(1);
+}
+
+function backToShipping() {
+  document.getElementById('panel-payment').style.opacity = '0.5';
+  document.getElementById('panel-payment').style.pointerEvents = 'none';
+  setStepActive(2);
+}
+
+// ===== Payment Processing =====
+async function createOrder() {
+  const items = Cart.items();
+  const subtotal = Cart.subtotal();
+  const discount = checkoutData.coupon?.discount || 0;
+  const total = Math.max(0, subtotal - discount + checkoutData.shippingCost);
+
+  const payload = {
+    items: items.map(i => ({ product_id: i.id, variant_id: i.variantId, quantity: i.quantity, unit_price: i.price })),
+    contact: checkoutData.contact,
+    shipping_address: { ...checkoutData.shipping, full_name: `${checkoutData.contact.fname} ${checkoutData.contact.lname}`, phone: checkoutData.contact.phone },
+    billing_address: { ...checkoutData.shipping, full_name: `${checkoutData.contact.fname} ${checkoutData.contact.lname}` },
+    payment_method: checkoutData.paymentMethod,
+    subtotal, discount_amount: discount,
+    shipping_amount: checkoutData.shippingCost,
+    total,
+    currency: 'NGN',
+    coupon_id: checkoutData.coupon?.coupon_id || null,
+    coupon_code: checkoutData.coupon?.code || null,
+    notes: checkoutData.shipping.notes,
+  };
+
+  return await API.post('/orders', payload);
+}
+
+async function processPayment() {
+  const payBtn = document.getElementById('pay-btn');
+  payBtn.disabled = true;
+  payBtn.classList.add('loading');
+  payBtn.textContent = 'Processing…';
+
+  try {
+    // 1. Create order in DB
+    const orderData = await createOrder();
+    const order = orderData.order;
+    const totalKobo = Math.round((Cart.subtotal() - (checkoutData.coupon?.discount || 0) + checkoutData.shippingCost) * 100);
+    const email = checkoutData.contact.email;
+
+    if (checkoutData.paymentMethod === 'paystack') {
+      await paystackCheckout(order.id, order.order_number, email, totalKobo);
+    } else if (checkoutData.paymentMethod === 'flutterwave') {
+      await flutterwaveCheckout(order.id, order.order_number, email, totalKobo / 100);
+    }
+  } catch (e) {
+    Toast.error('Order failed', e.message || 'Please try again');
+    payBtn.disabled = false;
+    payBtn.classList.remove('loading');
+    updatePayAmount();
+  }
+}
+
+function paystackCheckout(orderId, orderRef, email, amountKobo) {
+  return new Promise((resolve, reject) => {
+    if (!window.PaystackPop) { reject(new Error('Paystack not loaded')); return; }
+
+    const handler = PaystackPop.setup({
+      key: window._PAYSTACK_PUBLIC_KEY || 'pk_test_YOUR_KEY',
+      email,
+      amount: amountKobo,
+      currency: 'NGN',
+      ref: `SW-${orderRef}-${Date.now()}`,
+      metadata: { order_id: orderId, order_number: orderRef },
+      callback: async (response) => {
+        try {
+          await API.post('/payments/paystack/verify', { reference: response.reference, order_id: orderId });
+          Cart.clear();
+          sessionStorage.removeItem('sw_coupon');
+          window.location.href = `/pages/order-confirm.html?order=${orderRef}&ref=${response.reference}`;
+          resolve();
+        } catch (e) { reject(e); }
+      },
+      onClose: () => {
+        Toast.warning('Payment cancelled', 'Your order has been saved. Complete payment anytime.');
+        document.getElementById('pay-btn').disabled = false;
+        document.getElementById('pay-btn').classList.remove('loading');
+        updatePayAmount();
+      },
+    });
+    handler.openIframe();
+  });
+}
+
+function flutterwaveCheckout(orderId, orderRef, email, amount) {
+  return new Promise((resolve, reject) => {
+    if (!window.FlutterwaveCheckout) { reject(new Error('Flutterwave not loaded')); return; }
+    const [fname, ...rest] = (checkoutData.contact.fname + ' ' + checkoutData.contact.lname).split(' ');
+
+    FlutterwaveCheckout({
+      public_key: window._FLW_PUBLIC_KEY || 'FLWPUBK_TEST-YOUR_KEY',
+      tx_ref: `SW-${orderRef}-${Date.now()}`,
+      amount,
+      currency: 'NGN',
+      payment_options: 'card,banktransfer,ussd,mobilemoney',
+      customer: { email, phone_number: checkoutData.contact.phone, name: `${fname} ${rest.join(' ')}` },
+      customizations: { title: 'ShopWave', description: `Order #${orderRef}`, logo: '/assets/favicon.svg' },
+      meta: { order_id: orderId },
+      callback: async (response) => {
+        if (response.status === 'successful') {
+          try {
+            await API.post('/payments/flutterwave/verify', { transaction_id: response.transaction_id, order_id: orderId });
+            Cart.clear();
+            sessionStorage.removeItem('sw_coupon');
+            window.location.href = `/pages/order-confirm.html?order=${orderRef}&ref=${response.transaction_id}`;
+            resolve();
+          } catch (e) { reject(e); }
+        } else { reject(new Error('Payment failed')); }
+      },
+      onclose: () => {
+        document.getElementById('pay-btn').disabled = false;
+        document.getElementById('pay-btn').classList.remove('loading');
+        updatePayAmount();
+      },
+    });
+  });
+}
+
+function initPayPalButtons() {
+  const container = document.getElementById('paypal-button-container');
+  if (!container || container.innerHTML) return;
+
+  // Load PayPal SDK dynamically
+  API.get('/payments/paypal/config').then(config => {
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${config.client_id}&currency=USD`;
+    script.onload = () => {
+      window.paypal.Buttons({
+        createOrder: async () => {
+          const orderData = await createOrder();
+          const paypayOrder = await API.post('/payments/paypal/create', { order_id: orderData.order.id });
+          return paypayOrder.paypal_order_id;
+        },
+        onApprove: async (data) => {
+          const result = await API.post('/payments/paypal/capture', { paypal_order_id: data.orderID });
+          if (result.success) {
+            Cart.clear();
+            sessionStorage.removeItem('sw_coupon');
+            window.location.href = `/pages/order-confirm.html?order=${result.order_number}`;
+          }
+        },
+        onError: (err) => { Toast.error('PayPal error', 'Please try another payment method'); },
+      }).render('#paypal-button-container');
+    };
+    document.head.appendChild(script);
+  }).catch(() => {
+    container.innerHTML = '<p style="color:var(--color-danger);font-size:var(--text-sm);">PayPal is currently unavailable.</p>';
+  });
+}
+
+// Load public keys from API on page load
+API.get('/payments/keys').then(d => {
+  window._PAYSTACK_PUBLIC_KEY = d.paystack_public_key;
+  window._FLW_PUBLIC_KEY = d.flutterwave_public_key;
+}).catch(() => {});
+</script>
+</body>
+</html>
