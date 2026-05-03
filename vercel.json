@@ -3,9 +3,6 @@
   "name": "shopwave",
   "public": false,
   "outputDirectory": "frontend",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
-  ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/frontend/$1" }

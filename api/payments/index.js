@@ -4,8 +4,8 @@
 //             Flutterwave & PayPal
 // ================================================
 
-const { supabaseAdmin } = require('../../config/supabase');
-const { handler, requireAdmin } = require('../../middleware');
+const { supabaseAdmin } = require('../../backend/config/supabase');
+const { handler, requireAdmin } = require('../../backend/middleware');
 const crypto = require('crypto');
 
 module.exports = handler(async (req, res) => {

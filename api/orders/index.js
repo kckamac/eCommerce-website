@@ -3,8 +3,8 @@
 // Orders API — create, list, detail, status, coupon
 // ================================================
 
-const { supabaseAdmin } = require('../../config/supabase');
-const { handler, authenticate, requireAdmin, validateFields, getPagination } = require('../../middleware');
+const { supabaseAdmin } = require('../../backend/config/supabase');
+const { handler, authenticate, requireAdmin, validateFields, getPagination } = require('../../backend/middleware');
 
 module.exports = handler(async (req, res) => {
   const { method } = req;

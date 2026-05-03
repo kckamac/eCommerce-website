@@ -192,3 +192,83 @@ In Vercel dashboard → Settings → Domains → Add your domain.
 - ✅ 100/100 Lighthouse target (minimal JS, no frameworks)
 - ✅ SEO meta tags on all pages
 - ✅ Responsive mobile-first design
+
+🔐 How to Access the Admin Dashboard
+Step 1 — Create Your Admin User Account
+First, create a regular account on your site the normal way:
+
+Go to yoursite.com/pages/auth.html
+Click Create Account and register with your email and password
+You'll be logged in as a regular customer by default
+
+
+Step 2 — Promote the User to Admin in Supabase
+
+Go to your Supabase Dashboard → supabase.com/dashboard
+Select your ShopWave project
+Click SQL Editor in the left sidebar
+Run this query (replace the email):
+
+sql:
+UPDATE profiles
+SET role = 'admin'
+WHERE email = 'your@email.com';
+
+For a Super Admin (who can also manage other admins):
+sql:
+UPDATE profiles
+SET role = 'super_admin'
+WHERE email = 'your@email.com';
+
+Click Run — you'll see 1 row affected
+
+
+Step 3 — Log In to the Admin Dashboard
+
+Sign out and sign back in at yoursite.com/pages/auth.html
+Navigate directly to: yoursite.com/pages/admin/dashboard.html
+If your role is admin or super_admin, you'll see the full dashboard. Anyone else gets redirected to the homepage automatically.
+
+
+👥 Adding Multiple Staff / Managers
+You can assign different roles to different team members the same way. Here's a summary of each role:
+RoleWhat They Can DocustomerShop, place orders, manage their own profileadminFull access — products, orders, customers, settings, couponssuper_adminEverything an admin can do, plus change other users' roles
+
+To add a second admin (e.g. a store manager):
+sql:
+UPDATE profiles
+SET role = 'admin'
+WHERE email = 'manager@yourcompany.com';
+
+To downgrade someone back to customer:
+sql:
+UPDATE profiles
+SET role = 'customer'
+WHERE email = 'former-staff@email.com';
+
+🔒 To Disable a Staff Account
+If someone leaves and you need to lock them out immediately:
+sql:
+UPDATE profiles
+SET is_active = FALSE
+WHERE email = 'ex-staff@email.com';
+
+They'll get a "Your account has been disabled" error on their next login attempt.
+
+💡 Pro Tips
+View all admins at any time:
+sql:
+SELECT email, full_name, role, is_active, created_at
+FROM profiles
+WHERE role IN ('admin', 'super_admin')
+ORDER BY created_at;
+
+View all users:
+sql:
+SELECT email, full_name, role, is_active, created_at
+FROM profiles
+ORDER BY created_at DESC;
+
+From the Admin UI itself — once you're logged in as super_admin, you can also enable/disable customer accounts from the Customers page (/pages/admin/customers.html) without touching SQL.
+
+The admin dashboard URL is intentionally not linked from the public storefront — only people who know the path and have the right role in the database can access it. For extra security in production, you could also add your admin path to a password-protected Vercel deployment or restrict it by IP.

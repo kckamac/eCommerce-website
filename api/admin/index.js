@@ -3,8 +3,8 @@
 // Admin API — dashboard, products, orders, customers
 // ================================================
 
-const { supabaseAdmin } = require('../../config/supabase');
-const { handler, requireAdmin, getPagination } = require('../../middleware');
+const { supabaseAdmin } = require('../../backend/config/supabase');
+const { handler, requireAdmin, getPagination } = require('../../backend/middleware');
 
 module.exports = handler(async (req, res) => {
   const { method } = req;

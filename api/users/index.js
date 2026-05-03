@@ -3,8 +3,8 @@
 // Users API — register, login, profile, addresses
 // ================================================
 
-const { supabaseAdmin } = require('../../config/supabase');
-const { handler, authenticate, validateFields, getPagination } = require('../../middleware');
+const { supabaseAdmin } = require('../../backend/config/supabase');
+const { handler, authenticate, validateFields, getPagination } = require('../../backend/middleware');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
