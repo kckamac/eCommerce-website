@@ -2,6 +2,7 @@
   "version": 2,
   "name": "shopwave",
   "public": false,
+  "outputDirectory": "frontend",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
