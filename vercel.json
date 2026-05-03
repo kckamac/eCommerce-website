@@ -3,14 +3,14 @@
   "name": "shopwave",
   "public": false,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/backend/api/$1" }
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/backend/api/$1" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/frontend/$1" }
   ],
   "functions": {
-    "backend/api/**/*.js": {
+    "api/**/*.js": {
       "maxDuration": 10
     }
   },

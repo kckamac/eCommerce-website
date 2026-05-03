@@ -2,11 +2,11 @@
   "name": "shopwave",
   "version": "1.0.0",
   "description": "Modern lightweight eCommerce platform",
-  "main": "backend/server.js",
+  
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'Static frontend — no build step needed'",
-    "lint": "eslint backend/**/*.js"
+    "lint": "eslint api/**/*.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
